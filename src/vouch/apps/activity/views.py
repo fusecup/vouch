@@ -1,6 +1,8 @@
 import json
 import uuid
+from datetime import date, timedelta
 from decimal import Decimal
+from itertools import groupby
 
 from django.conf import settings
 from django.contrib import messages
@@ -18,7 +20,7 @@ from activity.services.plaid import PlaidConfigError, fetch_transactions
 from activity.services.risk import recommend_tier, upsert_counterparty
 from activity.services.router import create_approval_session, enforce_daily_swipe_limit, update_session_status
 from activity.services.simulator import PRESET_SCENARIOS, create_dynamic_transactions, create_scenario_intent
-from activity.services.specter import fetch_counterparty_signal
+from activity.services.specter import fetch_company_profile, fetch_counterparty_signal
 
 
 def _intent_to_transaction(intent: PaymentIntent) -> dict:
@@ -38,6 +40,64 @@ def _intent_to_transaction(intent: PaymentIntent) -> dict:
         "anomaly_score": intent.anomaly_score,
         "metadata": intent.metadata,
     }
+
+
+def _get_initials(name: str) -> str:
+    words = name.split()
+    if len(words) >= 2:
+        return (words[0][0] + words[1][0]).upper()
+    return words[0][0].upper() if words else "?"
+
+
+def _get_settlement_status(intent: PaymentIntent) -> str:
+    if intent.status in (PaymentIntent.Status.EXECUTED, PaymentIntent.Status.APPROVED, PaymentIntent.Status.REVERSED):
+        return "Settled instantly"
+    if intent.tier == PaymentIntent.Tier.TIER2:
+        return "Holds until 3 vouchers"
+    if intent.tier == PaymentIntent.Tier.TIER1:
+        return "Clears in 2h"
+    return "Clears T+1"
+
+
+def _format_transaction_intent(intent: PaymentIntent) -> dict:
+    txn = _intent_to_transaction(intent)
+    txn_date = intent.created_at.date()
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    if txn_date == today:
+        txn["date_label"] = "Today"
+    elif txn_date == yesterday:
+        txn["date_label"] = "Yesterday"
+    else:
+        txn["date_label"] = f"{txn_date.day} {txn_date.strftime('%b %Y')}"
+    txn["date_formatted"] = f"{txn_date.day} {txn_date.strftime('%b %Y')}"
+    txn["payment_type"] = (intent.metadata or {}).get("payment_type", "Recurring")
+    txn["settlement_status"] = _get_settlement_status(intent)
+    tier_map = {
+        PaymentIntent.Tier.TIER0: "1",
+        PaymentIntent.Tier.TIER1: "2",
+        PaymentIntent.Tier.TIER2: "3",
+    }
+    txn["tier_display"] = tier_map.get(intent.tier, "1")
+    txn["initials"] = _get_initials(txn["name"])
+    return txn
+
+
+def _group_transaction_feed(transactions: list[dict]) -> list[dict]:
+    groups = []
+    for label, group_txns in groupby(transactions, key=lambda t: t["date_label"]):
+        txn_list = list(group_txns)
+        total = int(sum(Decimal(t["amount"]) for t in txn_list))
+        pending_count = sum(1 for t in txn_list if t["pending"])
+        settled_count = len(txn_list) - pending_count
+        groups.append({
+            "label": label,
+            "transactions": txn_list,
+            "total_gbp": total,
+            "pending_count": pending_count,
+            "settled_count": settled_count,
+        })
+    return groups
 
 
 class BaseActivityPageView(LoginRequiredMixin, TemplateView):
@@ -105,10 +165,11 @@ class ActivityTransactionsView(BaseActivityPageView):
                 context["dashboard_error"] = f"Unable to load transactions: {exc}"
         else:
             intents = PaymentIntent.objects.select_related("counterparty").order_by("-created_at")[:200]
-            transactions = [_intent_to_transaction(intent) for intent in intents]
+            transactions = [_format_transaction_intent(intent) for intent in intents]
             context["transactions"] = transactions
             context["total_transactions"] = len(transactions)
             context["dashboard_error"] = ""
+            context["transaction_groups"] = _group_transaction_feed(transactions)
         request.session["activity_dashboard_transactions"] = {
             str(txn.get("transaction_id")): txn for txn in context["transactions"] if txn.get("transaction_id")
         }
@@ -205,8 +266,27 @@ class ActivitySimulationSettingsView(BaseActivityPageView):
         return context
 
 
-class ActivityDashboardView(ActivityOverviewView):
-    template_name = "activity/overview.html"
+class ActivityDashboardView(BaseActivityPageView):
+    template_name = "activity/dashboard.html"
+
+    def get(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        if not settings.VOUCH_ACTIVITY_DASHBOARD_ENABLED:
+            return render(request, "activity/dashboard_disabled.html")
+        context = self.get_context_data(**kwargs)
+        context.update(self.base_context(request))
+
+        intents = PaymentIntent.objects.select_related("counterparty").order_by("-created_at")[:50]
+        transactions = [_format_transaction_intent(intent) for intent in intents]
+        groups = _group_transaction_feed(transactions)
+
+        context["transaction_groups"] = groups
+        source_mode = getattr(settings, "VOUCH_ACTIVITY_TRANSACTIONS_SOURCE", "internal")
+        context["source_mode"] = "PLAID SANDBOX" if source_mode == "plaid" else "INTERNAL"
+
+        request.session["activity_dashboard_transactions"] = {
+            str(txn.get("transaction_id")): txn for txn in transactions if txn.get("transaction_id")
+        }
+        return render(request, self.template_name, context)
 
 
 class ActivityProfileView(BaseActivityPageView):
@@ -437,10 +517,28 @@ def transaction_detail_partial(request: HttpRequest, transaction_id: str = "") -
         else:
             transactions, _ = fetch_transactions(limit=settings.VOUCH_PLAID_TRANSACTION_PAGE_SIZE)
             selected = next((txn for txn in transactions if str(txn.get("transaction_id")) == transaction_id), None)
+    specter = {}
+    if selected:
+        cp_name = selected.get("name", "")
+        cp_domain = ""
+        if str(transaction_id).startswith("intent-"):
+            try:
+                intent_id = int(str(transaction_id).replace("intent-", ""))
+                cp = PaymentIntent.objects.select_related("counterparty").get(id=intent_id).counterparty
+                if cp:
+                    cp_domain = cp.domain
+            except (ValueError, PaymentIntent.DoesNotExist):
+                pass
+        specter = fetch_company_profile(name=cp_name, domain=cp_domain)
+
     return render(
         request,
         "activity/partials/transaction_detail.html",
-        {"transaction": selected, "transaction_json": json.dumps(selected, indent=2, sort_keys=True) if selected else ""},
+        {
+            "transaction": selected,
+            "transaction_json": json.dumps(selected, indent=2, sort_keys=True) if selected else "",
+            "specter": specter,
+        },
     )
 
 

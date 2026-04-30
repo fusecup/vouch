@@ -67,6 +67,7 @@
     {% endif %}
   </head>
   <body {% block body_attributes %} {% endblock body_attributes %}>
+    {% block site_header %}
     {% if request.user.is_authenticated %}
       <header class="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur supports-backdrop-filter:bg-background/75">
         <div class="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
@@ -117,6 +118,7 @@
         </div>
       </header>
     {% endif %}
+    {% endblock site_header %}
     {% block main_content %}
       {% block content %}
       {% endblock content %}

@@ -1,18 +1,22 @@
 {% extends "base.html" %}
 {% block page_title %}Profile{% endblock page_title %}
-{% block content %}
-  <section class="px-4 py-8">
-    <h1 class="mb-4 text-2xl font-semibold">Profile</h1>
-    {% include "activity/_nav.html" %}
-    <div class="max-w-2xl rounded border p-5">
-      <div class="mb-2 text-sm text-muted-foreground">Signed in as</div>
-      <div class="text-lg font-semibold">{{ user_name }}</div>
-      <div class="mb-4 text-sm">{{ user_email }}</div>
-      <div class="flex flex-wrap gap-2">
-        <a href="/a/email/" class="rounded border px-3 py-2 text-sm">Manage Email</a>
-        <a href="/a/password/change/" class="rounded border px-3 py-2 text-sm">Change Password</a>
-        <a href="/a/sessions/" class="rounded border px-3 py-2 text-sm">Active Sessions</a>
-      </div>
+{% block site_header %}{% endblock site_header %}
+{% block main_content %}
+<div class="vouch-bloom-surface min-h-screen px-5 py-6">
+  <header class="mb-8">
+    <div class="flex items-center gap-2.5"><span class="block h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(255,90,20,0.75)]"></span><span class="font-mono text-sm font-bold tracking-[0.18em] text-white uppercase">VOUCH</span></div>
+    <h1 class="mt-8 text-3xl font-semibold tracking-tight text-white">Profile</h1>
+    <p class="vouch-ink-mono mt-2 text-[10px]">Signed in account</p>
+  </header>
+  <div class="max-w-2xl rounded-2xl border border-white/10 bg-black/20 p-5">
+    <div class="mb-2 vouch-caption text-white/35">Signed in as</div>
+    <div class="text-xl font-semibold text-white">{{ user_name }}</div>
+    <div class="vouch-ink-mono mb-5 mt-1 text-[10px]">{{ user_email }}</div>
+    <div class="flex flex-wrap gap-2">
+      <a href="/a/email/" class="vouch-caption rounded-full border border-white/10 px-3 py-2 text-white/60 transition hover:bg-white/10 hover:text-white">Manage Email</a>
+      <a href="/a/password/change/" class="vouch-caption rounded-full border border-white/10 px-3 py-2 text-white/60 transition hover:bg-white/10 hover:text-white">Change Password</a>
+      <a href="/a/sessions/" class="vouch-caption rounded-full border border-white/10 px-3 py-2 text-white/60 transition hover:bg-white/10 hover:text-white">Active Sessions</a>
     </div>
-  </section>
-{% endblock content %}
+  </div>
+</div>
+{% endblock main_content %}

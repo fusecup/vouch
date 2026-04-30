@@ -1,40 +1,170 @@
+{% load humanize %}
 {% if transaction %}
-    <c-uikit.card>
-        <c-uikit.card.header class="border-b border-border/60 px-5 py-4">
-            <c-uikit.card.title class="text-base">Transaction Detail</c-uikit.card.title>
-            <c-uikit.card.description>Sandbox data for the selected transaction.</c-uikit.card.description>
-        </c-uikit.card.header>
-        <c-uikit.card.content class="space-y-4 p-5">
-            <dl class="space-y-3 text-sm">
-                <div class="flex items-start justify-between gap-4">
-                    <dt class="text-muted-foreground">ID</dt>
-                    <dd class="max-w-[18rem] break-all font-mono text-xs text-foreground">{{ transaction.transaction_id }}</dd>
-                </div>
-                <div class="flex items-start justify-between gap-4">
-                    <dt class="text-muted-foreground">Date</dt>
-                    <dd class="font-medium text-foreground">{{ transaction.date }}</dd>
-                </div>
-                <div class="flex items-start justify-between gap-4">
-                    <dt class="text-muted-foreground">Amount</dt>
-                    <dd class="font-medium text-foreground">£{{ transaction.amount }}</dd>
-                </div>
-                <div class="flex items-start justify-between gap-4">
-                    <dt class="text-muted-foreground">Pending</dt>
-                    <dd class="font-medium text-foreground">{% if transaction.pending %}Yes{% else %}No{% endif %}</dd>
-                </div>
-                <div class="flex items-start justify-between gap-4">
-                    <dt class="text-muted-foreground">Account</dt>
-                    <dd class="max-w-[18rem] break-all font-mono text-xs text-foreground">{{ transaction.account_id }}</dd>
-                </div>
-            </dl>
-            <details class="rounded-md border border-border/80 bg-muted/20 p-3">
-                <summary class="cursor-pointer text-sm font-medium text-foreground">Raw sandbox JSON</summary>
-                <pre class="mt-3 max-h-80 overflow-auto rounded-md border border-border/60 bg-background p-3 text-xs text-muted-foreground">{{ transaction_json }}</pre>
-            </details>
-        </c-uikit.card.content>
-    </c-uikit.card>
+<div class="overflow-hidden rounded-xl border border-white/10 bg-black/25 backdrop-blur-sm">
+
+  <!-- Header: company name + amount -->
+  <div class="border-b border-white/10 px-5 py-4">
+    <div class="flex items-start justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-red-600 text-sm font-bold text-white">
+          {{ transaction.name|slice:":1"|upper }}
+        </div>
+        <div>
+          <p class="font-semibold leading-tight text-white">{{ transaction.name }}</p>
+          {% if specter.tagline %}
+            <p class="vouch-ink-mono mt-0.5 text-[10px]">{{ specter.tagline|truncatechars:70 }}</p>
+          {% else %}
+            <p class="vouch-ink-mono mt-0.5 text-[10px]">{{ transaction.date }} · {{ transaction.source|default:"internal" }}</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="shrink-0 text-right">
+        <p class="font-serif text-2xl font-normal text-white">£{{ transaction.amount|floatformat:0|intcomma }}</p>
+        <p class="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-widest
+          {% if transaction.status == 'executed' or transaction.status == 'approved' %}text-emerald-400
+          {% elif transaction.status == 'pending' %}text-orange-400
+          {% else %}text-red-400{% endif %}">
+          {{ transaction.status|capfirst }}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Specter company intelligence -->
+  {% if specter.specter_id %}
+  <div class="border-b border-white/10 px-5 py-4 space-y-4">
+
+    <p class="vouch-caption text-[10px] text-white/40">COMPANY INTELLIGENCE · SPECTER</p>
+
+    <!-- Key stats row -->
+    <div class="grid grid-cols-3 gap-3">
+      {% if specter.employee_count %}
+      <div class="rounded-lg bg-white/5 px-3 py-2.5 text-center">
+        <p class="font-mono text-sm font-semibold text-white">{{ specter.employee_count|intcomma }}</p>
+        <p class="vouch-caption mt-0.5 text-[9px] text-white/40">EMPLOYEES</p>
+      </div>
+      {% endif %}
+      {% if specter.founded_year %}
+      <div class="rounded-lg bg-white/5 px-3 py-2.5 text-center">
+        <p class="font-mono text-sm font-semibold text-white">{{ specter.founded_year }}</p>
+        <p class="vouch-caption mt-0.5 text-[9px] text-white/40">FOUNDED</p>
+      </div>
+      {% endif %}
+      {% if specter.total_funding_display %}
+      <div class="rounded-lg bg-white/5 px-3 py-2.5 text-center">
+        <p class="font-mono text-sm font-semibold text-orange-400">{{ specter.total_funding_display }}</p>
+        <p class="vouch-caption mt-0.5 text-[9px] text-white/40">RAISED</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Location + status -->
+    {% if specter.hq_city or specter.operating_status %}
+    <div class="flex items-center gap-4 text-sm">
+      {% if specter.hq_city %}
+      <span class="vouch-ink-mono text-[11px]">{{ specter.hq_city }}{% if specter.hq_country %}, {{ specter.hq_country }}{% endif %}</span>
+      {% endif %}
+      {% if specter.operating_status %}
+      <span class="rounded bg-{% if specter.operating_status == 'active' %}emerald{% else %}red{% endif %}-500/20 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-{% if specter.operating_status == 'active' %}emerald{% else %}red{% endif %}-400">
+        {{ specter.operating_status }}
+      </span>
+      {% endif %}
+      {% if specter.customer_focus %}
+      <span class="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-white/50">{{ specter.customer_focus|upper }}</span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Description -->
+    {% if specter.description %}
+    <p class="text-[12px] leading-relaxed text-white/60">{{ specter.description|truncatechars:200 }}</p>
+    {% endif %}
+
+    <!-- Industries + verticals -->
+    {% if specter.industry or specter.tech_verticals %}
+    <div class="flex flex-wrap gap-1.5">
+      {% for ind in specter.industry %}
+      <span class="rounded bg-white/8 px-2 py-0.5 font-mono text-[10px] text-white/50">{{ ind }}</span>
+      {% endfor %}
+      {% for vert in specter.tech_verticals %}
+      <span class="rounded bg-orange-500/10 px-2 py-0.5 font-mono text-[10px] text-orange-400/70">{{ vert }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Founders -->
+    {% if specter.founders %}
+    <div>
+      <p class="vouch-caption mb-2 text-[10px] text-white/40">FOUNDERS</p>
+      <div class="space-y-1.5">
+        {% for f in specter.founders %}
+        <div class="flex items-center gap-2">
+          <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white/10 text-[9px] font-bold text-white/60">
+            {{ f.name|slice:":1"|upper }}
+          </div>
+          <div>
+            <span class="text-xs font-medium text-white">{{ f.name }}</span>
+            {% if f.title %}<span class="vouch-ink-mono ml-1.5 text-[10px]">{{ f.title }}</span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Traction -->
+    {% if specter.traction %}
+    <p class="text-[11px] leading-relaxed text-white/50 italic">{{ specter.traction }}</p>
+    {% endif %}
+
+    <!-- Funding detail -->
+    {% if specter.last_funding_type %}
+    <div class="flex items-center justify-between rounded-lg bg-white/5 px-3 py-2">
+      <span class="vouch-caption text-[10px] text-white/40">LAST ROUND</span>
+      <span class="font-mono text-xs text-white/70">{{ specter.last_funding_type }}{% if specter.last_funding_date %} · {{ specter.last_funding_date }}{% endif %}</span>
+    </div>
+    {% endif %}
+
+  </div>
+  {% endif %}
+
+  <!-- Transaction metadata -->
+  <div class="px-5 py-4 space-y-2">
+    <p class="vouch-caption text-[10px] text-white/40">TRANSACTION DATA</p>
+    <dl class="space-y-2 text-xs">
+      <div class="flex justify-between gap-4">
+        <dt class="text-white/40">ID</dt>
+        <dd class="break-all font-mono text-white/60">{{ transaction.transaction_id }}</dd>
+      </div>
+      <div class="flex justify-between gap-4">
+        <dt class="text-white/40">Date</dt>
+        <dd class="text-white/70">{{ transaction.date }}</dd>
+      </div>
+      {% if transaction.risk_score is not None %}
+      <div class="flex justify-between gap-4">
+        <dt class="text-white/40">Risk score</dt>
+        <dd class="font-mono text-white/70">{{ transaction.risk_score }}</dd>
+      </div>
+      {% endif %}
+      {% if transaction.risk_reasons %}
+      <div class="flex justify-between gap-4">
+        <dt class="text-white/40">Risk reasons</dt>
+        <dd class="text-right text-white/60">{{ transaction.risk_reasons|join:", " }}</dd>
+      </div>
+      {% endif %}
+    </dl>
+  </div>
+
+  <!-- Raw JSON toggle -->
+  <div class="border-t border-white/10 px-5 py-3">
+    <details>
+      <summary class="cursor-pointer font-mono text-[10px] uppercase tracking-wider text-white/30 hover:text-white/50">Raw JSON</summary>
+      <pre class="mt-3 max-h-60 overflow-auto rounded-lg bg-black/40 p-3 text-[10px] text-white/40">{{ transaction_json }}</pre>
+    </details>
+  </div>
+</div>
 {% else %}
-    <c-uikit.alert variant="destructive">
-        Transaction not found in the current fetch window.
-    </c-uikit.alert>
+<div class="rounded-xl border border-white/10 bg-black/20 px-5 py-10 text-center backdrop-blur-sm">
+  <p class="vouch-caption text-[11px] text-white/30">Select a transaction to view details</p>
+</div>
 {% endif %}

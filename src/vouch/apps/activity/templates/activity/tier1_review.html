@@ -1,20 +1,46 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block page_title %}Tier 1 Review{% endblock page_title %}
-{% block content %}
-  <section class="px-4 py-8">
-    <h1 class="mb-4 text-2xl font-semibold">Tier 1 Review Queue</h1>
-    {% include "activity/_nav.html" %}
-    <div class="overflow-x-auto rounded border">
-      <table class="w-full text-sm">
-        <thead class="bg-muted"><tr><th class="p-2 text-left">ID</th><th class="p-2 text-left">Counterparty</th><th class="p-2 text-left">Amount</th><th class="p-2 text-left">Risk</th></tr></thead>
-        <tbody>
-          {% for item in queue %}
-            <tr class="border-t"><td class="p-2">{{ item.id }}</td><td class="p-2">{{ item.counterparty.name|default:"-" }}</td><td class="p-2">£{{ item.amount_gbp }}</td><td class="p-2">{{ item.risk_score }}</td></tr>
-          {% empty %}
-            <tr><td colspan="4" class="p-4 text-muted-foreground">No tier 1 approvals pending.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+{% block site_header %}{% endblock site_header %}
+{% block main_content %}
+<div class="vouch-bloom-surface min-h-screen px-5 py-6">
+  <header class="mb-8">
+    <div class="flex items-center gap-2.5"><span class="block h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(255,90,20,0.75)]"></span><span class="font-mono text-sm font-bold tracking-[0.18em] text-white uppercase">VOUCH</span></div>
+    <h1 class="mt-8 text-3xl font-semibold tracking-tight text-white">Tier 1 Review Queue</h1>
+    <p class="vouch-ink-mono mt-2 text-[10px]">Payments awaiting single-approver sign-off</p>
+  </header>
+  {% for item in queue %}
+    <div class="border-t border-white/[0.08] py-4">
+      <div class="flex items-center justify-between gap-4">
+        <div class="min-w-0">
+          <p class="truncate text-[17px] font-semibold text-white">{{ item.counterparty.name|default:"Unknown" }}</p>
+          <p class="vouch-ink-mono mt-0.5 text-[10px]">ID {{ item.id }} · Risk {{ item.risk_score }}/100 · {{ item.status }}</p>
+        </div>
+        <div class="shrink-0 text-right">
+          <p class="vouch-amount-list text-white">£{{ item.amount_gbp|floatformat:0|intcomma }}</p>
+          <p class="vouch-caption text-amber-400">Tier 2</p>
+        </div>
+      </div>
+      <div class="mt-3 flex gap-2">
+        <button type="button" onclick="swipe({{ item.id }}, 'approve')" class="rounded-full bg-emerald-600/80 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-600">Approve</button>
+        <button type="button" onclick="swipe({{ item.id }}, 'escalate')" class="rounded-full bg-orange-500/70 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-orange-500">Escalate</button>
+        <button type="button" onclick="swipe({{ item.id }}, 'reject')" class="rounded-full border border-white/20 px-3 py-1.5 text-xs font-medium text-white/60 transition hover:bg-white/10">Reject</button>
+      </div>
     </div>
-  </section>
-{% endblock content %}
+  {% empty %}
+    <p class="vouch-caption py-16 text-center text-white/25">No tier 1 approvals pending.</p>
+  {% endfor %}
+</div>
+{% csrf_token %}
+<script>
+async function swipe(id, decision) {
+  const r = await fetch("{% url 'activity:dashboard' %}api/tier1/swipe/", {
+    method: "POST",
+    headers: {"Content-Type": "application/json", "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")?.value || ""},
+    body: JSON.stringify({payment_intent_id: id, decision})
+  });
+  if (r.ok) window.location.reload();
+  else { const d = await r.json(); alert(d.error || "Action failed"); }
+}
+</script>
+{% endblock main_content %}

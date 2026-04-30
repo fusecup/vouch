@@ -1,36 +1,37 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block page_title %}Simulator{% endblock page_title %}
-{% block content %}
-  <section class="px-4 py-8">
-    <h1 class="mb-4 text-2xl font-semibold">Fake Data Simulator</h1>
-    {% include "activity/_nav.html" %}
-    <p class="mb-4 text-sm text-muted-foreground">Run presets to generate edge-case payment intents for fraud testing across queue/session pages.</p>
-    {% csrf_token %}
-    <div class="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-      {% for key, preset in presets.items %}
-        <button type="button" class="rounded border p-3 text-left" onclick="runPreset('{{ key }}')">
-          <div class="font-medium">{{ key }}</div>
-          <div class="text-xs text-muted-foreground">{{ preset.counterparty }} / £{{ preset.amount_gbp }}</div>
-        </button>
-      {% endfor %}
-    </div>
-    <h2 class="mb-2 text-lg font-semibold">Recent simulated intents</h2>
-    <div class="overflow-x-auto rounded border">
-      <table class="w-full text-sm">
-        <thead class="bg-muted"><tr><th class="p-2 text-left">External</th><th class="p-2 text-left">Counterparty</th><th class="p-2 text-left">Tier</th><th class="p-2 text-left">Status</th><th class="p-2 text-left">Run</th></tr></thead>
-        <tbody>
-          {% for intent in simulated %}
-            <tr class="border-t"><td class="p-2">{{ intent.external_id }}</td><td class="p-2">{{ intent.counterparty.name|default:"-" }}</td><td class="p-2">{{ intent.tier }}</td><td class="p-2">{{ intent.status }}</td><td class="p-2">{{ intent.scenario_run_id }}</td></tr>
-          {% empty %}
-            <tr><td colspan="5" class="p-4 text-muted-foreground">No simulator runs yet.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+{% block site_header %}{% endblock site_header %}
+{% block main_content %}
+<div class="vouch-bloom-surface min-h-screen px-5 py-6">
+  <header class="mb-8">
+    <div class="flex items-center gap-2.5"><span class="block h-2.5 w-2.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(255,90,20,0.75)]"></span><span class="font-mono text-sm font-bold tracking-[0.18em] text-white uppercase">VOUCH</span></div>
+    <h1 class="mt-8 text-3xl font-semibold tracking-tight text-white">Fake Data Simulator</h1>
+    <p class="vouch-ink-mono mt-2 text-[10px]">Generate edge-case payment intents</p>
+  </header>
+  {% csrf_token %}
+  <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+    {% for key, preset in presets.items %}
+      <button type="button" class="rounded-2xl border border-white/10 bg-black/20 p-4 text-left transition hover:bg-white/[0.04]" onclick="runPreset('{{ key }}')">
+        <div class="text-[17px] font-semibold text-white">{{ preset.label|default:key }}</div>
+        <div class="vouch-ink-mono mt-1 text-[10px]">{{ preset.counterparty }} · £{{ preset.amount_gbp }}</div>
+      </button>
+    {% endfor %}
+  </div>
+  <section class="mt-8">
+    <p class="vouch-caption px-1 py-3 text-white/40">Recent simulated intents</p>
+    {% for intent in simulated %}
+      <div class="flex items-center justify-between border-t border-white/[0.08] py-4">
+        <div><p class="text-[17px] font-semibold text-white">{{ intent.counterparty.name|default:"Unknown" }}</p><p class="vouch-ink-mono mt-0.5 text-[10px]">{{ intent.external_id }} · {{ intent.status }} · {{ intent.scenario_run_id }}</p></div>
+        <div class="text-right"><p class="vouch-amount-list text-white">£{{ intent.amount_gbp|floatformat:0|intcomma }}</p><p class="vouch-caption text-orange-400">{{ intent.tier }}</p></div>
+      </div>
+    {% empty %}
+      <p class="vouch-caption py-16 text-center text-white/25">No simulator runs yet.</p>
+    {% endfor %}
   </section>
   <script>
     async function runPreset(preset) {
-      const response = await fetch("{% url 'activity:simulator_run_api' %}", {
+      const response = await fetch("{% url 'activity:dashboard' %}api/simulator/run/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -46,4 +47,5 @@
       window.location.reload();
     }
   </script>
-{% endblock content %}
+</div>
+{% endblock main_content %}

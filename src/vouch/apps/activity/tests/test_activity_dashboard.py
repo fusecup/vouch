@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from django.test import Client
 from django.urls import reverse
 
-from activity.models import PaymentIntent, PolicyConfigEvent
+from activity.models import ApprovalSession, Counterparty, PaymentIntent, PolicyConfigEvent
 
 
 @pytest.mark.django_db
@@ -47,7 +47,7 @@ def test_create_payment_intent_api(settings):
     client.force_login(user)
     payload = {"counterparty": "Acme Ltd", "amount_gbp": "62000", "external_id": "txn-123"}
     response = client.post(
-        reverse("activity:create_payment"),
+        f"{reverse('activity:dashboard')}api/payments/create/",
         data=json.dumps(payload),
         content_type="application/json",
     )
@@ -86,7 +86,7 @@ def test_rules_threshold_update_validation(settings):
     client.force_login(user)
     bad_payload = {"tier0_max": "5000", "tier1_max": "1000", "always_tier2_over": "20000", "hard_block_unknown_over": "100"}
     response = client.post(
-        reverse("activity:rules_thresholds_update_api"),
+        f"{reverse('activity:dashboard')}api/rules-thresholds/update/",
         data=json.dumps(bad_payload),
         content_type="application/json",
     )
@@ -94,7 +94,7 @@ def test_rules_threshold_update_validation(settings):
 
     good_payload = {"tier0_max": "500", "tier1_max": "2000", "always_tier2_over": "20000", "hard_block_unknown_over": "1500"}
     response = client.post(
-        reverse("activity:rules_thresholds_update_api"),
+        f"{reverse('activity:dashboard')}api/rules-thresholds/update/",
         data=json.dumps(good_payload),
         content_type="application/json",
     )
@@ -109,7 +109,7 @@ def test_simulator_preset_creates_payment_intent(settings):
     client.force_login(user)
 
     response = client.post(
-        reverse("activity:simulator_run_api"),
+        f"{reverse('activity:dashboard')}api/simulator/run/",
         data=json.dumps({"preset": "high_over_25k"}),
         content_type="application/json",
     )
@@ -127,17 +127,19 @@ def test_page_apis_respond(settings):
     client.force_login(user)
 
     urls = [
-        "activity:overview_stats",
-        "activity:transactions_api",
-        "activity:tier1_queue",
-        "activity:tier2_sessions_api",
-        "activity:counterparties_api",
-        "activity:rules_thresholds_api",
-        "activity:receipts_api",
-        "activity:simulator_presets_api",
+        "api/overview/stats/",
+        "api/transactions/",
+        "api/tier1/queue/",
+        "api/tier2/sessions/",
+        "api/counterparties/",
+        "api/rules-thresholds/",
+        "api/receipts/",
+        "api/simulator/presets/",
+        "api/vendors/specter/?name=Acme",
     ]
-    for name in urls:
-        response = client.get(reverse(name))
+    api_root = reverse("activity:dashboard")
+    for url in urls:
+        response = client.get(f"{api_root}{url}")
         assert response.status_code == 200
 
 
@@ -152,7 +154,7 @@ def test_simulation_settings_batch_creation():
     assert "Batch Scenario Generator" in page.content.decode()
 
     response = client.post(
-        reverse("activity:simulator_batch_run_api"),
+        f"{reverse('activity:dashboard')}api/simulator/run-batch/",
         data=json.dumps({"counts": {"known_low_risk": 2, "high_over_25k": 1}}),
         content_type="application/json",
     )
@@ -169,7 +171,7 @@ def test_dynamic_simulation_generation_creates_rich_transaction_data():
     client.force_login(user)
 
     response = client.post(
-        reverse("activity:simulator_dynamic_generate_api"),
+        f"{reverse('activity:dashboard')}api/simulator/generate-dynamic/",
         data=json.dumps({"count": 30, "min_amount": "50", "max_amount": "30000", "require_all_tiers": True}),
         content_type="application/json",
     )
@@ -185,3 +187,58 @@ def test_dynamic_simulation_generation_creates_rich_transaction_data():
     assert intent.risk_reasons
     assert intent.metadata.get("merchant_category")
     assert intent.metadata.get("geo_country")
+
+
+@pytest.mark.django_db
+def test_approval_mutation_apis_work(settings):
+    settings.VOUCH_TIER2_MIN_APPROVERS = 1
+    settings.VOUCH_TIER2_MAX_APPROVERS = 1
+
+    user = get_user_model().objects.create_user(email="approvals@example.com", password="password")
+    client = Client()
+    client.force_login(user)
+    api_root = reverse("activity:dashboard")
+
+    counterparty = Counterparty.objects.create(name="Approval Vendor", is_known=False)
+    tier1_intent = PaymentIntent.objects.create(
+        external_id="swipe-intent-1",
+        counterparty=counterparty,
+        amount_gbp="2500.00",
+        tier=PaymentIntent.Tier.TIER1,
+        status=PaymentIntent.Status.PENDING,
+    )
+
+    swipe_response = client.post(
+        f"{api_root}api/tier1/swipe/",
+        data=json.dumps({"payment_intent_id": tier1_intent.id, "decision": "approve"}),
+        content_type="application/json",
+    )
+    assert swipe_response.status_code == 200
+    assert swipe_response.json()["session_status"] == ApprovalSession.Status.APPROVED
+    tier1_intent.refresh_from_db()
+    assert tier1_intent.status == PaymentIntent.Status.EXECUTED
+
+    tier2_intent = PaymentIntent.objects.create(
+        external_id="tier2-intent-1",
+        counterparty=counterparty,
+        amount_gbp="62000.00",
+        tier=PaymentIntent.Tier.TIER1,
+        status=PaymentIntent.Status.PENDING,
+    )
+    session_response = client.post(
+        f"{api_root}api/tier2/session/",
+        data=json.dumps({"payment_intent_id": tier2_intent.id}),
+        content_type="application/json",
+    )
+    assert session_response.status_code == 201
+    session_id = session_response.json()["session_id"]
+
+    attestation_response = client.post(
+        f"{api_root}api/tier2/attestation/",
+        data=json.dumps({"session_id": session_id, "decision": "approve", "face_passed": True, "voice_passed": True}),
+        content_type="application/json",
+    )
+    assert attestation_response.status_code == 200
+    assert attestation_response.json()["session_status"] == ApprovalSession.Status.APPROVED
+    tier2_intent.refresh_from_db()
+    assert tier2_intent.status == PaymentIntent.Status.EXECUTED

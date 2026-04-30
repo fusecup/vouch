@@ -1,115 +1,110 @@
 {% extends "base.html" %}
-{% block page_title %}
-    Activity Dashboard
-{% endblock page_title %}
+{% load humanize %}
+{% block page_title %}Dashboard{% endblock page_title %}
 {% block content %}
-    <div class="vouch-bloom-surface min-h-[calc(100vh-4rem)] px-4 py-10 sm:px-6 lg:px-8">
-        <div class="mx-auto w-full max-w-[1200px] space-y-8">
-            <section class="flex flex-col gap-4 border-b border-border/60 pb-6 sm:flex-row sm:items-start sm:justify-between">
-                <div class="space-y-2">
-                    <div class="flex items-center gap-2">
-                        <h1 class="vouch-ink-primary text-3xl font-semibold tracking-tight">Vouch Activity Dashboard</h1>
-                        <c-uikit.badge variant="secondary">
-                            {{ source_mode }}
-                        </c-uikit.badge>
-                    </div>
-                    <p class="vouch-ink-mono text-xs">Last {{ lookback_days }} days of transactions and risk activity.</p>
-                </div>
-                <c-uikit.button href="{% url 'activity:dashboard' %}?last_refreshed=now" size="sm">
-                    Refresh
-                </c-uikit.button>
-            </section>
+<div class="vouch-bloom-surface min-h-[calc(100vh-4rem)]">
+  <div class="mx-auto w-full max-w-[1200px] px-4 py-8 sm:px-6 lg:px-8">
 
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <c-uikit.card class="shadow-sm">
-                    <c-uikit.card.content class="space-y-2 p-5">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Transactions in Range</p>
-                        <p class="text-3xl font-semibold tracking-tight text-card-foreground">{{ total_transactions }}</p>
-                    </c-uikit.card.content>
-                </c-uikit.card>
-                <c-uikit.card class="shadow-sm">
-                    <c-uikit.card.content class="space-y-2 p-5">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tier 0 Executed</p>
-                        <p class="text-3xl font-semibold tracking-tight text-card-foreground">{{ tier0_count }}</p>
-                    </c-uikit.card.content>
-                </c-uikit.card>
-                <c-uikit.card class="shadow-sm">
-                    <c-uikit.card.content class="space-y-2 p-5">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Connection</p>
-                        <p class="text-2xl font-semibold tracking-tight text-card-foreground">{{ source_mode }}</p>
-                    </c-uikit.card.content>
-                </c-uikit.card>
-                <c-uikit.card class="shadow-sm">
-                    <c-uikit.card.content class="space-y-2 p-5">
-                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Streaming</p>
-                        <p class="text-2xl font-semibold tracking-tight text-card-foreground">
-                            {% if streaming_enabled %}On{% else %}Off{% endif %}
-                        </p>
-                    </c-uikit.card.content>
-                </c-uikit.card>
-            </div>
-
-            {% if dashboard_error %}
-                <c-uikit.alert variant="destructive">
-                    {{ dashboard_error }}
-                </c-uikit.alert>
-            {% endif %}
-
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_minmax(320px,1fr)]">
-                <section class="overflow-hidden rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm">
-                    <div class="flex items-center justify-between border-b border-white/10 px-5 py-4">
-                        <p class="vouch-ink-mono text-xs">Today · {{ tier1_pending_count|default:0 }} Pending</p>
-                        <p class="vouch-ink-mono text-xs">£{{ total_transactions }}</p>
-                    </div>
-                    <div>
-                        {% for txn in transactions %}
-                            <button class="flex w-full items-center justify-between gap-4 border-b border-white/10 px-5 py-4 text-left transition-colors hover:bg-white/5"
-                                    hx-get="{% url 'activity:transaction_detail' %}?transaction_id={{ txn.transaction_id|urlencode }}"
-                                    hx-target="#transaction-detail"
-                                    hx-swap="innerHTML"
-                                    hx-trigger="click">
-                                <div class="flex min-w-0 items-center gap-3">
-                                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-linear-to-br from-orange-400 to-red-500 text-sm font-semibold text-white">
-                                        {{ txn.name|default:"?"|slice:":2"|upper }}
-                                    </div>
-                                    <div class="min-w-0">
-                                        <p class="truncate text-xl font-semibold tracking-tight text-white">{{ txn.name|default:"Unknown" }}</p>
-                                        <p class="vouch-ink-mono mt-1 truncate text-[11px]">
-                                            {{ txn.date }} · {{ txn.source|default:source_mode }}
-                                            {% if txn.category %}
-                                                · {{ txn.category.0 }}
-                                            {% endif %}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="shrink-0 text-right">
-                                    <p class="vouch-amount-list text-white">£{{ txn.amount }}</p>
-                                    <p class="vouch-ink-mono mt-1 text-[10px]">
-                                        {% if txn.category and "Tier 2" in txn.category.0 %}
-                                            <span class="vouch-tier2">Tier 2</span>
-                                        {% elif txn.category and "Tier 1" in txn.category.0 %}
-                                            <span class="vouch-tier1">Tier 1</span>
-                                        {% else %}
-                                            <span class="vouch-tier0">Tier 0</span>
-                                        {% endif %}
-                                    </p>
-                                </div>
-                            </button>
-                        {% empty %}
-                            <div class="px-5 py-10 text-center text-sm text-white/70">
-                                No transactions found in this date range.
-                            </div>
-                        {% endfor %}
-                    </div>
-                </section>
-                <div id="transaction-detail" class="lg:sticky lg:top-24 lg:self-start">
-                    <c-uikit.card class="shadow-sm">
-                        <c-uikit.card.content class="p-5">
-                            <p class="text-sm text-muted-foreground">Select a transaction to view sandbox details.</p>
-                        </c-uikit.card.content>
-                    </c-uikit.card>
-                </div>
-            </div>
-        </div>
+    <!-- Page header -->
+    <div class="mb-6 flex items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-semibold tracking-tight text-white">Payment Activity</h1>
+        <p class="vouch-ink-mono mt-1 text-xs">{{ source_mode }} · real-time risk routing across all tiers</p>
+      </div>
+      <a href="?refresh=1" class="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium text-white/60 transition hover:border-white/40 hover:bg-white/10 hover:text-white">
+        Refresh
+      </a>
     </div>
+
+    <!-- Stat chips -->
+    <div class="mb-6 grid grid-cols-3 gap-3">
+      <div class="rounded-xl border border-white/10 bg-black/20 px-5 py-4 backdrop-blur-sm">
+        <p class="vouch-caption text-[10px] text-white/40">TIER 1 AUTO-ROUTED</p>
+        <p class="mt-2 text-3xl font-semibold tracking-tight text-white">{{ tier0_count }}</p>
+      </div>
+      <div class="rounded-xl border border-white/10 bg-black/20 px-5 py-4 backdrop-blur-sm">
+        <p class="vouch-caption text-[10px] text-white/40">TIER 2 PENDING</p>
+        <p class="mt-2 text-3xl font-semibold tracking-tight text-orange-400">{{ tier1_pending_count }}</p>
+      </div>
+      <div class="rounded-xl border border-white/10 bg-black/20 px-5 py-4 backdrop-blur-sm">
+        <p class="vouch-caption text-[10px] text-white/40">TIER 3 ESCALATED</p>
+        <p class="mt-2 text-3xl font-semibold tracking-tight text-red-400">{{ tier2_pending_count }}</p>
+      </div>
+    </div>
+
+    <!-- Two-column: transaction list + detail -->
+    <div class="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
+
+      <!-- Transaction list -->
+      <div class="overflow-hidden rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm">
+        {% for group in transaction_groups %}
+
+        <!-- Date group header -->
+        <div class="flex items-center justify-between border-b border-white/[0.06] bg-white/[0.02] px-5 py-3">
+          <span class="vouch-caption text-[11px] text-white/40">
+            {{ group.label|upper }}{% if group.pending_count %} · {{ group.pending_count }} PENDING{% elif group.settled_count %} · {{ group.settled_count }} SETTLED{% endif %}
+          </span>
+          <span class="vouch-caption text-[11px] {% if group.pending_count %}text-orange-400{% else %}text-white/30{% endif %}">
+            £{{ group.total_gbp|intcomma }}
+          </span>
+        </div>
+
+        {% for txn in group.transactions %}
+        <button class="flex w-full items-center justify-between gap-4 border-b border-white/[0.07] px-5 py-4 text-left transition-colors hover:bg-white/[0.04]"
+                hx-get="{% url 'activity:transaction_detail' %}?transaction_id={{ txn.transaction_id|urlencode }}"
+                hx-target="#txn-detail"
+                hx-swap="innerHTML">
+          <div class="flex min-w-0 items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-red-600 text-sm font-bold text-white">
+              {{ txn.initials }}
+            </div>
+            <div class="min-w-0">
+              <p class="truncate text-base font-semibold leading-snug tracking-tight text-white">{{ txn.name }}</p>
+              <p class="vouch-ink-mono mt-0.5 truncate text-[10px]">
+                {{ txn.date_formatted }} · {{ txn.payment_type }} · {{ txn.settlement_status }}
+              </p>
+            </div>
+          </div>
+          <div class="ml-2 shrink-0 text-right">
+            <p class="vouch-amount-list text-white">£{{ txn.amount|floatformat:0|intcomma }}</p>
+            <p class="mt-0.5 font-mono text-[10px] font-semibold tracking-[0.1em] uppercase">
+              {% if txn.tier_display == "1" %}
+                <span class="text-orange-400">TIER 1 ✓</span>
+              {% elif txn.tier_display == "2" %}
+                <span class="text-amber-400/80">TIER 2</span>
+              {% else %}
+                <span class="text-red-500">TIER 3 ▲</span>
+              {% endif %}
+            </p>
+          </div>
+        </button>
+        {% endfor %}
+
+        {% empty %}
+        <div class="px-5 py-16 text-center">
+          <p class="vouch-caption text-[11px] text-white/25">No transactions yet — run the simulator to generate data.</p>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- Detail panel (sticky) -->
+      <div class="xl:sticky xl:top-24 xl:self-start">
+        <div id="txn-detail">
+          <div class="rounded-xl border border-white/10 bg-black/20 px-5 py-10 text-center backdrop-blur-sm">
+            <p class="vouch-caption text-[11px] text-white/25">Select a transaction to view details</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-8 text-center">
+      <p class="vouch-caption text-[10px] tracking-[0.12em] text-white/15">
+        VOUCH · {{ source_mode }} · SPECTER LIVE
+      </p>
+    </div>
+
+  </div>
+</div>
 {% endblock content %}

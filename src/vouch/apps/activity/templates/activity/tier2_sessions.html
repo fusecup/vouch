@@ -1,20 +1,43 @@
 {% extends "base.html" %}
-{% block page_title %}Tier 2 Sessions{% endblock page_title %}
+{% block page_title %}Tier 3 Sessions{% endblock page_title %}
 {% block content %}
-  <section class="px-4 py-8">
-    <h1 class="mb-4 text-2xl font-semibold">Tier 2 Sessions</h1>
-    {% include "activity/_nav.html" %}
-    <div class="overflow-x-auto rounded border">
-      <table class="w-full text-sm">
-        <thead class="bg-muted"><tr><th class="p-2 text-left">Session</th><th class="p-2 text-left">Payment Intent</th><th class="p-2 text-left">Status</th><th class="p-2 text-left">Required Approvers</th></tr></thead>
-        <tbody>
-          {% for session in sessions %}
-            <tr class="border-t"><td class="p-2">{{ session.id }}</td><td class="p-2">{{ session.payment_intent_id }}</td><td class="p-2">{{ session.status }}</td><td class="p-2">{{ session.required_approvers }}</td></tr>
-          {% empty %}
-            <tr><td colspan="4" class="p-4 text-muted-foreground">No Tier 2 sessions created.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div class="vouch-bloom-surface min-h-[calc(100vh-4rem)]">
+  <div class="mx-auto w-full max-w-[1200px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-white">Tier 3 Sessions</h1>
+      <p class="vouch-ink-mono mt-1 text-xs">Board-level multi-approver sessions requiring face &amp; voice biometrics</p>
     </div>
-  </section>
+
+    <div class="overflow-hidden rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm">
+      <div class="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <p class="vouch-caption text-[11px] text-white/50">ACTIVE SESSIONS</p>
+        <span class="vouch-caption text-[11px] text-red-400">{{ sessions|length }} session{{ sessions|length|pluralize }}</span>
+      </div>
+      {% for session in sessions %}
+      <div class="flex items-center gap-4 border-b border-white/[0.07] px-5 py-4 last:border-0 transition hover:bg-white/[0.03]">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500/20 font-mono text-xs font-bold text-red-400">T3</div>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium text-white">Session #{{ session.id }}</p>
+          <p class="vouch-ink-mono mt-0.5 text-[10px]">Intent #{{ session.payment_intent_id }} &middot; {{ session.required_approvers }} approver{{ session.required_approvers|pluralize }} required</p>
+        </div>
+        <div class="shrink-0 text-right">
+          <span class="rounded px-2 py-1 font-mono text-[10px] uppercase tracking-wider
+            {% if session.status == 'pending' %}bg-orange-500/20 text-orange-400
+            {% elif session.status == 'approved' %}bg-emerald-500/15 text-emerald-400
+            {% elif session.status == 'blocked' or session.status == 'rejected' %}bg-red-500/15 text-red-400
+            {% else %}bg-white/10 text-white/50{% endif %}">
+            {{ session.status }}
+          </span>
+        </div>
+      </div>
+      {% empty %}
+      <div class="px-5 py-16 text-center">
+        <p class="vouch-caption text-[11px] text-white/25">No Tier 3 sessions created.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
 {% endblock content %}

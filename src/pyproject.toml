@@ -18,6 +18,7 @@ dependencies = [
     "django-import-export>=4.3.14",
     "django-multiselectfield>=1.0.1",
     "django-nested-admin>=4.1.6",
+    "django-ninja>=1.6.2",
     "django-prettyjson>=0.4.1",
     "django-ses>=4.5.0",
     "django-timezone-field>=7.2.1",

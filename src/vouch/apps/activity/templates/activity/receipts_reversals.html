@@ -1,30 +1,52 @@
 {% extends "base.html" %}
-{% block page_title %}Receipts and Reversals{% endblock page_title %}
+{% load humanize %}
+{% block page_title %}Receipts &amp; Reversals{% endblock page_title %}
 {% block content %}
-  <section class="px-4 py-8">
-    <h1 class="mb-4 text-2xl font-semibold">Receipts and Reversals</h1>
-    {% include "activity/_nav.html" %}
-    <div class="overflow-x-auto rounded border">
-      <table class="w-full text-sm">
-        <thead class="bg-muted"><tr><th class="p-2 text-left">Receipt</th><th class="p-2 text-left">Payment</th><th class="p-2 text-left">Reverse until</th><th class="p-2 text-left">Action</th></tr></thead>
-        <tbody>
-          {% for receipt in receipts %}
-            <tr class="border-t">
-              <td class="p-2">{{ receipt.id }}</td>
-              <td class="p-2">{{ receipt.payment_intent_id }}</td>
-              <td class="p-2">{{ receipt.can_reverse_until }}</td>
-              <td class="p-2">
-                <form method="post" action="{% url 'activity:payment_reverse' receipt.payment_intent_id %}">
-                  {% csrf_token %}
-                  <button class="rounded border px-2 py-1 text-xs" type="submit">Request reversal</button>
-                </form>
-              </td>
-            </tr>
-          {% empty %}
-            <tr><td colspan="4" class="p-4 text-muted-foreground">No receipts available.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
+<div class="vouch-bloom-surface min-h-[calc(100vh-4rem)]">
+  <div class="mx-auto w-full max-w-[1200px] space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight text-white">Receipts &amp; Reversals</h1>
+      <p class="vouch-ink-mono mt-1 text-xs">Executed payment receipts and reversal window management</p>
     </div>
-  </section>
+
+    <div class="overflow-hidden rounded-xl border border-white/10 bg-black/20 backdrop-blur-sm">
+      <div class="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <p class="vouch-caption text-[11px] text-white/50">PAYMENT RECEIPTS</p>
+        <span class="vouch-caption text-[11px] text-white/30">{{ receipts|length }} receipt{{ receipts|length|pluralize }}</span>
+      </div>
+      {% for receipt in receipts %}
+      <div class="flex items-center gap-4 border-b border-white/[0.07] px-5 py-4 last:border-0 transition hover:bg-white/[0.03]">
+        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 font-mono text-xs font-bold text-emerald-400">
+          R{{ receipt.id }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-medium text-white">Receipt #{{ receipt.id }}</p>
+          <p class="vouch-ink-mono mt-0.5 text-[10px]">Payment #{{ receipt.payment_intent_id }}</p>
+        </div>
+        <div class="shrink-0 text-right">
+          <p class="vouch-ink-mono text-[10px]">Reverse until</p>
+          <p class="font-mono text-xs text-white/70">{{ receipt.can_reverse_until|date:"d M Y H:i" }}</p>
+        </div>
+        {% if not receipt.reversed_at %}
+        <form method="post" action="{% url 'activity:payment_reverse' receipt.payment_intent_id %}" class="shrink-0">
+          {% csrf_token %}
+          <button type="submit"
+            class="rounded-lg border border-red-500/40 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/20">
+            Request Reversal
+          </button>
+        </form>
+        {% else %}
+        <span class="shrink-0 rounded bg-white/10 px-2 py-1 font-mono text-[10px] text-white/30 uppercase">Reversed</span>
+        {% endif %}
+      </div>
+      {% empty %}
+      <div class="px-5 py-16 text-center">
+        <p class="vouch-caption text-[11px] text-white/25">No receipts available.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</div>
 {% endblock content %}
