@@ -3,37 +3,47 @@
 > *A tiered guardrail layer for an agent that moves money — auto-approving the boring, swiping the borderline, and biometrically vouching for the dangerous.*
 
 **Cursor × Briefcase · Halkin Offices · London 2026**
-**Tracks:** Hybrid — primary **Track 01 (Money Movement)**, with **Track 02 (Financial Intelligence)** as the gating mechanism.
 
 ---
 
-## Why this exists
+## The problem
 
-Finance agents that move money are now technically capable of running payroll, paying invoices, and sweeping cash. The blocker is no longer capability — it is **trust calibration**. Today's options are binary: either the agent has authority and one fraud incident bankrupts you, or every transaction needs a human and the agent is theatre.
+Finance agents that move money are now technically capable of running payroll, paying invoices, refunding customers, and sweeping cash between accounts. The blocker is no longer capability — it is **trust calibration**.
 
-Vouch makes the trust gradient explicit. The agent acts alone where it should, asks lightly where it should ask lightly, and demands a wall of human attestation where the money is large enough to matter.
+Today's choices for any company shipping a finance agent are binary, and both are bad:
 
-The intelligence (categorisation, fraud signal, counterparty quality) is not a side feature — it is the **gate** that decides which tier any given transaction enters.
+1. **Give the agent authority.** It works for weeks, then one fraudulent invoice or one hallucinated routing number bankrupts the company.
+2. **Make every transaction need a human.** Approvals pile up in Slack, the founder rubber-stamps £50k transfers between calls, and the agent is theatre — slower than the bookkeeper it replaced.
 
----
+The unsolved question is not *"can the agent move money?"* It is **"how big is too big to act alone, what counts as suspicious, and who can the agent trust?"** That question is not the same on a £40 SaaS bill, a £4,200 invoice to a new vendor, and a £62,000 wire to a counterparty the agent has never seen.
 
-## The three-tier guardrail
-
-| Tier | Trigger | UI | Latency | Failure mode |
-|---|---|---|---|---|
-| **0 — Silent auto-approve** | Known counterparty, in-band amount, healthy Specter score, no anomaly | None — receipt drops in dashboard + Slack with reverse-link | < 2s | Reversible-by-default for 60 min |
-| **1 — Tinder swipe** | Mid-band amount, mild anomaly, first-time vendor with acceptable Specter | Mobile card stack with vendor logo, amount, 1-line LLM "why", Specter mini-card | < 5s of approver attention | Approval fatigue → cap 20/day, auto-escalate |
-| **2 — Biometric vouch** | High-band, strong anomaly, poor Specter, or unknown recipient over £25k | iOS Dynamic Island Live Activity → Face ID → 5–8s video selfie reading randomized challenge phrase → multi-party (2–4 approvers within 30 min) | < 90s per approver | Coercion classifier blocks duress approvals |
-
-**Tier 2 in detail.** Face ID via `react-native-biometrics` (template stays in Apple's Secure Enclave — never leaves device). Video recorded with `react-native-vision-camera`. The clip goes to a Django Celery task running:
-
-- `opencv/facial_expression_recognition` — 7-class facial emotion at 4 fps
-- `FunAudioLLM/SenseVoiceSmall` — single forward pass returns transcript + voice emotion + acoustic event tags
-- Distress fusion: face emotion + voice emotion + cadence + transcript-match against the challenge phrase. Any single high-confidence coerced signal blocks the txn — even if Face ID passed and other approvers cleared.
+Today, every system answers it the same way. Vouch answers it three different ways, depending on what the agent is about to do.
 
 ---
 
-## Architecture
+## The proposed solution
+
+Vouch is a guardrail layer that sits between a finance agent and the money rails. Every transaction the agent wants to make is scored, routed into one of three tiers, and handled with a UX matched to its consequence.
+
+The product *is* the escalation ladder:
+
+| Tier | What happens | Example |
+|---|---|---|
+| **Tier 1 — Silent auto-approve** | Agent acts alone. A receipt drops in the dashboard and Slack with a one-click "this was wrong" reverse-link. Reversible by default for 60 minutes. | Recurring £40 AWS bill, paid in 2 seconds, no human looks at it. |
+| **Tier 2 — Tinder swipe** | A card pops on the designated approver's phone. Vendor logo, amount, one-line LLM "why this is being asked", Specter mini-card. Right swipe approves, left rejects, up escalates, down asks for more info. | First-time £4,200 vendor with healthy Specter signal — 5 seconds of attention, done. |
+| **Tier 3 — Biometric vouch** | iOS Dynamic Island pulses red. Tap launches Face ID. Approver reads a randomized challenge phrase containing the amount and recipient on camera. 2–4 approvers must each pass, within 30 minutes. Coercion classifier blocks duress. | £62,000 wire to a never-seen counterparty — a security ritual, not a tap. |
+
+Three things make this different from a normal approval queue:
+
+- **The tier is decided by the agent's read of the transaction**, not by a hardcoded amount threshold. A poor counterparty signal at £5k can become Tier 3; a strong one at £15k can stay Tier 1.
+- **Tier 3 has a third axis beyond authentication.** Face ID proves *who*; the coercion classifier proves *under what conditions*. A coerced approval blocks the txn even with sufficient other vouches and even with Face ID passing.
+- **The intelligence and the movement are the same product.** Track 02 (financial intelligence) is not a side feature — it is the gate that decides which Track 01 (money movement) tier any given transaction enters.
+
+---
+
+## How it works
+
+### The agent loop
 
 ```
                     ┌─────────────────────────┐
@@ -47,7 +57,7 @@ The intelligence (categorisation, fraud signal, counterparty quality) is not a s
                     │    + LLM tie-breaker)    │
                     └─┬──────────┬───────────┬─┘
                       │          │           │
-                  Tier 0      Tier 1      Tier 2
+                  Tier 1      Tier 2      Tier 3
                   execute     swipe       biometric vouch
                       │          │           │
                       └──────────┴───────────┘
@@ -55,19 +65,48 @@ The intelligence (categorisation, fraud signal, counterparty quality) is not a s
                           Rails executor ──▶ ledger + receipt
 ```
 
-| Layer | Stack |
-|---|---|
-| Money rails | Plaid sandbox (transactions + auth) |
-| Agent + risk scoring | Django + Celery, Anthropic SDK (Haiku 4.5 scorer / Opus 4.7 explainer), Specter API |
-| Coercion classifier | Python (`transformers` + `torch`), exposed as a Celery task |
-| Mobile (Tier 1 + Tier 2 + Dynamic Island) | React Native via Expo Router + dev client; Expo Notifications + SMS fallback |
-| Dashboard / activity log | Django + HTMX with SSE for live txn stream |
+Every transaction the agent wants to make goes through the same three steps:
 
-**Two LLM roles, deliberately split.** Haiku 4.5 is the cheap, fast scorer that runs on every txn. Opus 4.7 is only called on Tier 1+ for the human-facing explanation and post-hoc audit narrative.
+**1. Score.** Claude Haiku 4.5 reads the transaction JSON, the recipient's Specter profile (funding stage, headcount trend, recent news, signals matrix), and the company's payment history. It outputs a 0–100 risk score, the top three reasons, and a recommended tier. Haiku is chosen because it runs on every txn — it has to be cheap and fast.
+
+**2. Route.** The tier router is deterministic rules first (amount bands, known-counterparty checks, Specter quality grade), with the LLM score as a tie-breaker on the boundary cases. The output is *which tier* and *why*. The "why" is stored — every threshold decision is auditable after the fact.
+
+**3. Handle.** Tier 1 hits the Plaid sandbox executor immediately and writes a receipt. Tier 2 emits a push notification to the designated approver's phone with the swipe card. Tier 3 emits a Live Activity to all enrolled approvers' Dynamic Islands and waits for the multi-party biometric attestations.
+
+A second LLM (**Claude Opus 4.7**) is called only on Tier 2 and Tier 3, to write the human-facing explainer ("recurring AWS bill, in band, first-of-month") and the post-hoc audit narrative. The two-model split is deliberate: Haiku handles cost-sensitive volume, Opus handles the small number of cases where prose quality matters.
+
+### Tier 3 in detail (the part that actually breaks new ground)
+
+When a transaction routes to Tier 3, this is the flow on the approver's phone:
+
+1. The iOS **Dynamic Island** displays a compact red pill — `VOUCH REQUIRED · £62,000` — pulsing on a 1.4-second cycle.
+2. Tapping expands the Live Activity into the Vouch app. The approver sees the amount, recipient, Specter grade, and approver position (`approver 1 of 3`).
+3. **Face ID** runs via `expo-local-authentication` on native and `navigator.credentials.create({ userVerification: 'required' })` on the web (WebAuthn → platform authenticator: Touch ID on macOS, Windows Hello, Face ID in iOS Safari). The biometric template never leaves the device's secure enclave.
+4. A **randomized challenge phrase** appears, containing the amount, recipient, and date — e.g. *"authorize sixty-two thousand to Acme on April thirty"*. The phrase is generated server-side at the moment of capture, which is the anti-replay primitive: no pre-recorded video can match a phrase that was generated 0.5 seconds ago.
+5. A **5–8 second video selfie** is recorded via `react-native-vision-camera`, with the approver reading the phrase aloud.
+6. The clip uploads to a Django Celery task that runs two models in parallel:
+   - `opencv/facial_expression_recognition` — sampled at 4 fps, returns one of seven facial emotion classes (angry, disgust, fear, happy, neutral, sad, surprise).
+   - `FunAudioLLM/SenseVoiceSmall` — single forward pass returns transcript, voice emotion, and acoustic event tags.
+7. A **distress fusion heuristic** combines face emotion, voice emotion, speech cadence, and transcript-match against the challenge phrase. Any single high-confidence coerced signal flips the result to `coerced: true`.
+8. The result panel renders on the approver's phone — green ✓ VOUCHED with method (Face ID / Touch ID / Passkey) and emotion grid, or red ● COERCED · BLOCKED with the reason.
+
+For the transaction to execute, **all** required approvers (configurable per company; default 3 for amounts above £25k) must each complete this flow within a 30-minute window with no coerced flag. A single coerced flag is a hard block that cannot be overridden, regardless of how many other approvers vouched cleanly.
+
+### Where the data lives
+
+| Layer | Stack | Notes |
+|---|---|---|
+| Money rails | Plaid sandbox (transactions + auth) | Real bank linkage, sandbox txns for the demo |
+| Agent + risk scoring | Django + Celery, Anthropic SDK, Specter API | Existing Django base; agent app added |
+| Coercion classifier | Python (`transformers` + `torch`) as a Celery task | Takes the uploaded clip, returns the fused JSON result |
+| Mobile (Tier 2 + Tier 3 + Dynamic Island) | React Native via Expo Router, `expo-local-authentication`, ActivityKit Live Activity | One binary handles both swipe and vouch screens |
+| Dashboard | Django + HTMX + SSE | Live receipt feed, threshold config, signed audit log |
+
+Mobile talks to Django over signed REST. Push goes via Expo Notifications with SMS fallback. The Face ID template never leaves the device; the challenge-phrase video and audio are uploaded to the server with a hard 24-hour retention TTL.
 
 ---
 
-## Quick start
+## Run it locally
 
 You need Docker Desktop, Node.js with pnpm, and (for the mobile side) an iPhone with Expo Go or Xcode for the simulator.
 
@@ -77,7 +116,6 @@ You need Docker Desktop, Node.js with pnpm, and (for the mobile side) an iPhone 
 # from repo root
 cp .env.example .env
 
-# build & boot the full stack (db, redis, backend, celery, flower, kanchi, mail, tailwind)
 docker compose build backend
 docker compose up -d
 
@@ -98,36 +136,36 @@ Once up:
 | Kanchi (Celery UI) | http://127.0.0.1:3000 |
 | MailCatcher | http://127.0.0.1:1080 |
 
-Authentication is `django-allauth` with a Google social provider already wired (`/a/`). To enable Google sign-in, add a `SocialApp` row in the admin under *Social Accounts → Social applications* with your Google OAuth client ID/secret. Email + password works out of the box.
+Authentication is `django-allauth` with a Google social provider already wired (`/a/`). Email + password works out of the box. To enable Google sign-in, add a `SocialApp` row in the admin under *Social Accounts → Social applications* with your Google OAuth client ID/secret.
 
 ### 2. Mobile app (Expo / React Native)
 
 ```bash
 cd mobile
 pnpm install
-pnpm start          # Metro bundler — scan QR with Expo Go on iPhone
+pnpm start          # Metro bundler — scan the QR code with Expo Go on iPhone
 pnpm ios            # or boot the iOS simulator directly
 ```
 
-The app currently runs as a JS-only Expo Go project against mock data in `src/data/mockTransactions.ts`. Native modules (`react-native-biometrics`, `react-native-vision-camera`, ActivityKit Live Activity) are wired in at prebuild time once the demo path is signed off — judges will see the fully-prebuilt binary on the demo phones.
+The app runs as a JS-only Expo Go project against mock data in `src/data/mockTransactions.ts`. Native biometrics use `expo-local-authentication` (real Face ID / Touch ID on device), with WebAuthn as the web fallback. The fully-prebuilt binary with `react-native-vision-camera` and the ActivityKit Live Activity binary is what the demo phones run.
 
 **Routes:**
 - `/` — transaction ledger (list)
-- `/approve?id=…` — Tier 1 Tinder swipe (right = approve, left = reject, up = escalate)
-- `/vouch?id=…` — Tier 2 biometric vouch with Dynamic Island banner
+- `/approve?id=…` — Tier 2 Tinder swipe (right = approve, left = reject, up = escalate)
+- `/vouch?id=…` — Tier 3 biometric vouch with Dynamic Island banner
 
-**Demo killer.** On `/vouch`, toggle the `duress` switch at the bottom before reaching the result stage. Same Face ID pass, same recording — the coercion classifier flags the cadence and blocks the txn. That is the 90-second pitch.
+**The demo killer.** On `/vouch`, toggle the `duress` switch at the bottom before reaching the result stage. Same Face ID pass, same recording — the coercion classifier flags the cadence and blocks the txn. That is the 90-second pitch in one beat.
 
 ### 3. Required secrets in `.env`
 
-The `.env.example` covers infra. For the demo path, also set:
+The committed `.env.example` covers infra. For the demo path, also set:
 
 ```bash
-ANTHROPIC_API_KEY=...    # Haiku 4.5 scorer + Opus 4.7 explainer
-SPECTER_API_KEY=...      # counterparty quality oracle
-PLAID_CLIENT_ID=...      # sandbox is fine
+ANTHROPIC_API_KEY=...           # Haiku 4.5 scorer + Opus 4.7 explainer
+SPECTER_API_KEY=...             # counterparty quality oracle
+PLAID_CLIENT_ID=...             # sandbox is fine
 PLAID_SECRET=...
-GOOGLE_OAUTH_CLIENT_ID=...     # optional, for /a/ Google sign-in
+GOOGLE_OAUTH_CLIENT_ID=...      # optional, for /a/ Google sign-in
 GOOGLE_OAUTH_CLIENT_SECRET=...
 ```
 
@@ -137,36 +175,23 @@ GOOGLE_OAUTH_CLIENT_SECRET=...
 
 | t | What the judge sees |
 |---|---|
-| 0–10s | Dashboard live: 12 invoices arrived in the last hour. 9 already auto-paid (Tier 0). Receipts streaming. |
+| 0–10s | Dashboard live: 12 invoices arrived in the last hour. 9 already auto-paid (Tier 1). Receipts streaming. |
 | 10–25s | A £4,200 invoice to a new vendor pops on the presenter's phone as a Tinder card. Specter mini-card shows the vendor is a real seed-stage co. Swipe right. Paid. |
-| 25–45s | A £62,000 transfer triggers. Tier 2 escalation fires to **the actual judges' phones** (pre-enrolled). Face ID prompt → randomized challenge phrase ("authorize sixty-two thousand to Acme on April thirty"). Voice + face captured. |
-| 45–70s | On-device emotion panel renders live: neutral / confident. Three approvers complete. Money moves. |
-| 70–90s | Re-run the same £62k txn, but this time the presenter reads the phrase under fake duress (rushed cadence). Coerced flag fires red, txn blocks. *That* is the moment. |
+| 25–45s | A £62,000 transfer triggers. Tier 3 escalation fires to **the actual judges' phones** (pre-enrolled). Face ID prompt → randomized challenge phrase ("authorize sixty-two thousand to Acme on April thirty"). Voice + face captured. |
+| 45–70s | On-device emotion panel renders: neutral / cadence ok. Three approvers complete. Money moves. |
+| 70–90s | Re-run the same £62k txn, but the presenter reads the phrase under fake duress (rushed cadence). Coerced flag fires red, txn blocks. *That* is the moment. |
 
 ---
 
-## How this maps to the rubric
+## What Vouch will not do
 
-| Criterion | Pts | How Vouch lands it |
-|---|---|---|
-| Concrete workflow value | 2 | Replaces the "everyone CC'd on every payment approval" Slack chaos with calibrated automation. The Tier 0 stat is live on stage. |
-| Track fit (hybrid) | 2 | Tier 0/2 = money movement; Tier 0→1→2 routing = financial intelligence. Intelligence isn't a side feature — it is the gate. |
-| Human-in-the-loop | 1 | Three tiers with explicit thresholds, confidence gates (Specter + LLM score), multi-party Tier 2, coercion as a *third* axis beyond authentication. |
-| Technical execution | 1 | Real rails (Plaid), edge biometric capture (RN), Django agent with Specter + dual-model LLM. Three integrations that all work in the demo. |
-| Demo clarity | 1 | The duress-replay moment in the last 20s is the entire pitch in one beat. |
-| **Best use of Cursor** | +1 | Built end-to-end in Cursor IDE with Specter MCP wired in for live company-data exploration; Cursor agent runs the eval suite that calibrates risk thresholds against historical txns. |
-| **Best use of Specter** | +1 | Counterparty quality score *changes the tier threshold* — Specter is load-bearing, not decorative. |
-| **Best use of LLM models** | +1 | Two-model split: Haiku for per-txn scoring (cost), Opus for the human-facing explanation (quality). Coercion classifier is a separate small model. |
+The guardrail on the guardrail. These are deliberately hard, not advisory:
 
----
-
-## What Vouch will not do (the guardrail on the guardrail)
-
-- Will not move money without rails approval — Tier 2 multi-party block is hard, not advisory.
-- Will not store the Face ID template off-device — it stays in the Secure Enclave. Challenge-phrase video/audio is sent to the server for emotion analysis with a hard 24h retention TTL.
-- Will not auto-pay an unknown counterparty over £5k regardless of risk score.
-- Will not adapt thresholds without an audit trail — every threshold change is a signed config event.
-- Will not silently override a coerced flag — a coerced attestation always blocks, even with sufficient other approvals.
+- **Will not move money without rails approval.** Tier 3 multi-party block is a hard stop.
+- **Will not store the Face ID template off-device.** It stays in the Secure Enclave. Challenge-phrase video/audio is sent to the server for emotion analysis with a 24h retention TTL.
+- **Will not auto-pay an unknown counterparty over £5k**, regardless of risk score.
+- **Will not adapt thresholds without an audit trail** — every threshold change is a signed config event.
+- **Will not silently override a coerced flag** — a coerced attestation always blocks, even with sufficient other approvals.
 
 ---
 
@@ -174,8 +199,9 @@ GOOGLE_OAUTH_CLIENT_SECRET=...
 
 ```
 vouch/
-├── PRD.md                      # The product spec — read this for the long form
-├── docker-compose.yaml         # Multi-service stack (Postgres, Redis, Django, Celery, Flower, Kanchi, MailCatcher, Tailwind)
+├── PRD.md                      # Long-form product spec
+├── design.md                   # Visual language, tokens, motion, tier-by-tier UX
+├── docker-compose.yaml         # Postgres, Redis, Django, Celery, Flower, Kanchi, MailCatcher, Tailwind
 ├── Makefile                    # make up / make migrate / make shell / make zsh
 ├── src/
 │   ├── manage.py
@@ -187,16 +213,19 @@ vouch/
 │           ├── accounts/       # custom User, allauth adapter
 │           ├── common/         # admin_site
 │           └── fc_uikit/       # design system + welcome view
-└── mobile/                     # Expo Router RN app — Tier 1 swipe + Tier 2 vouch
+└── mobile/                     # Expo Router RN app — Tier 2 swipe + Tier 3 vouch
     ├── app/
     │   ├── index.tsx           # ledger
-    │   ├── approve.tsx         # Tier 1 swipe
-    │   └── vouch.tsx           # Tier 2 biometric (with duress toggle)
+    │   ├── approve.tsx         # Tier 2 swipe
+    │   └── vouch.tsx           # Tier 3 biometric (with duress toggle)
     └── src/
         ├── components/
         ├── data/mockTransactions.ts
-        └── tokens/             # design tokens (single source of truth)
+        ├── services/biometric.ts   # WebAuthn + expo-local-authentication
+        └── tokens/                 # design tokens — single source of truth
 ```
+
+For the visual language and design rationale, see [design.md](./design.md). For the long-form spec, see [PRD.md](./PRD.md).
 
 ---
 
@@ -277,21 +306,6 @@ This project uses [Spec-Kit](https://github.com/github/spec-kit). All commands a
 ```
 
 Spec artifacts live in `.specify/specs/<number>-<feature>/`. The constitution at `.specify/memory/constitution.md` is the source of truth all specs must align with.
-
-</details>
-
-<details>
-<summary><b>Optional: GPG-signed commits</b></summary>
-
-This repo expects signed commits in production. For hackathon work this is optional — see [GPG Tools](https://gpgtools.org/) and configure per-repo:
-
-```ini
-# .git/config
-[user]
-    name = <FULL NAME>
-    email = <EMAIL>
-    signingkey = <GPG KEY — last 16 digits>
-```
 
 </details>
 

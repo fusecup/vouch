@@ -5,14 +5,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BloomGradient } from '@/components/BloomGradient';
 import { DynamicIslandBanner, IslandState } from '@/components/DynamicIslandBanner';
+import { MediaCapture, MediaCaptureHandle } from '@/components/MediaCapture';
 import { pendingTransactions } from '@/data/mockTransactions';
 import { promptBiometric } from '@/services/biometric';
+import {
+  classifyAudio,
+  EmotionResult,
+  isClassifierReady,
+  preloadEmotionClassifier,
+} from '@/services/emotion';
 import { colors } from '@/tokens/colors';
 import { type } from '@/tokens/typography';
 
 const RECORDING_TOTAL_MS = 8000;
 
-type Stage = 'compact' | 'expanded' | 'faceid' | 'recording' | 'result';
+type Stage = 'compact' | 'expanded' | 'faceid' | 'recording' | 'classifying' | 'result';
 
 export default function VouchScreen() {
   const insets = useSafeAreaInsets();

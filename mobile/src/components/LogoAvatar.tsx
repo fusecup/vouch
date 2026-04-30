@@ -12,7 +12,7 @@ interface LogoAvatarProps {
   square?: boolean;
 }
 
-const PALETTE = ['#FF8A2E', '#3FA9FF', '#3FE07D', '#9A66FF', '#FF6A1A', '#FF3B30', '#F2C94C'];
+const PALETTE = ['#FF8A2E', '#FF6A1A', '#FF3B30', '#F2C94C', '#C9B89A', '#8A2A05'];
 
 function hashIndex(input: string, mod: number) {
   let h = 0;

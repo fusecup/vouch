@@ -83,7 +83,7 @@ export const pendingTransactions: Transaction[] = [
     account: '••••3401',
     method: 'Plaid · Faster Payments',
     dateLabel: '30 Apr 2026',
-    brandColor: '#3FA9FF',
+    brandColor: '#F2C94C',
     recurring: true,
     timeToClear: 'Clears T+1',
   },

@@ -18,8 +18,9 @@ import { Transaction } from '@/types/transaction';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * motion.swipeThresholdRatio;
 const CARD_WIDTH = Math.min(360, SCREEN_WIDTH * 0.86);
-const SCALLOP_COUNT = 14;
+const SCALLOP_COUNT = 16;
 const SCALLOP_DIAMETER = CARD_WIDTH / SCALLOP_COUNT;
+const SCALLOP_HEIGHT = SCALLOP_DIAMETER / 2;
 
 interface TinderCardProps {
   txn: Transaction;
@@ -446,16 +447,15 @@ const styles = StyleSheet.create({
   scallopRow: {
     flexDirection: 'row',
     width: CARD_WIDTH,
-    height: SCALLOP_DIAMETER / 2,
-    overflow: 'hidden',
+    height: SCALLOP_HEIGHT,
     backgroundColor: 'transparent',
   },
   scallop: {
     width: SCALLOP_DIAMETER,
-    height: SCALLOP_DIAMETER,
-    borderRadius: SCALLOP_DIAMETER / 2,
+    height: SCALLOP_HEIGHT,
+    borderBottomLeftRadius: SCALLOP_HEIGHT,
+    borderBottomRightRadius: SCALLOP_HEIGHT,
     backgroundColor: colors.cardFill,
-    marginTop: -SCALLOP_DIAMETER / 2,
   },
 
   overlay: {
