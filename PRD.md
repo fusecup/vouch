@@ -38,11 +38,12 @@ The product *is* the escalation ladder. Each tier has a distinct UI, distinct la
 
 ### Tier 2 — Biometric vouch
 - **Triggers:** High-band amount (configurable, default £10k+), strong anomaly score, poor Specter signal (shell-like, dormant, sanctioned-adjacent), multiple risk factors stacked, or *any* request to a never-seen recipient over £25k.
-- **UI:** React Native app (lives in the same binary as Tier 1).
+- **UI:** React Native app (lives in the same binary as Tier 1). Tier 2 escalation surfaces in the **iOS Dynamic Island** as a Live Activity — compact pill pulses red until tapped, expands to launch Face ID, narrates recording state and result.
   1. **Face ID** challenge via `react-native-biometrics` (Apple Secure Enclave on-device — template never leaves the device).
   2. **5–8s video selfie** via `react-native-vision-camera`, reading a randomized challenge phrase containing the amount and recipient name (anti-replay).
-  3. **Facial + voice emotion** fused on the backend (Hume API or equivalent) on the captured clip — neutral / stressed / fearful / coerced. Sub-2s round-trip.
-  4. Distress-signal heuristics (forced-cadence speech, micro-expression mismatch, speech-vs-text mismatch on the challenge phrase) flag the attestation as *coerced* even if Face ID passes.
+  3. **Facial emotion** classified server-side with [`opencv/facial_expression_recognition`](https://huggingface.co/opencv/facial_expression_recognition) (MobileFaceNet-based, 7 classes — angry, disgust, fear, happy, neutral, sad, surprise). Sampled at 4 fps from the clip.
+  4. **Voice emotion + ASR fused in one pass** with [`FunAudioLLM/SenseVoiceSmall`](https://huggingface.co/FunAudioLLM/SenseVoiceSmall) — returns transcript + emotion + acoustic event tags from the same forward pass. The transcript is matched against the randomized challenge phrase as anti-replay; emotion feeds the coercion classifier.
+  5. Distress-signal heuristics fuse face emotion + voice emotion + cadence + transcript-match. Any single high-confidence coerced signal flags the attestation as *coerced* even if Face ID passes.
 - **Multi-party:** 2–4 approvers (configurable; demo uses 3) must each complete the biometric flow within a 30-min window. Coerced flags from any one approver block the txn.
 - **Latency target:** < 90s per approver.
 - **Failure mode:** Coerced approval (kidnap / phishing / SIM-swap social engineering). Mitigation: emotion-flag short-circuits, randomized challenge phrase prevents pre-recorded replay, geolocation diversity check across approvers.
@@ -79,7 +80,8 @@ Two LLM roles, deliberately split:
 |---|---|---|
 | Money rails | Plaid sandbox (transactions + auth) | Member A |
 | Agent + risk scoring | Django (existing base) + Celery, Anthropic SDK for Haiku/Opus, Specter API | Member B |
-| Mobile app (Tier 1 + Tier 2) | React Native via Expo + dev client (`react-native-biometrics`, `react-native-vision-camera`); push via Expo Notifications + SMS fallback | Member C |
+| Coercion classifier service | Python (HF `transformers` + `torch`) — face: `opencv/facial_expression_recognition` · voice + ASR: `FunAudioLLM/SenseVoiceSmall`. Exposed as a Django Celery task; takes the uploaded clip, returns `{face_emotion, voice_emotion, transcript, transcript_match, cadence, coerced: bool}`. | Member B |
+| Mobile app (Tier 1 + Tier 2 + Dynamic Island) | React Native via Expo Router + dev client (`react-native-biometrics`, `react-native-vision-camera`, `expo-live-activity`); push via Expo Notifications + SMS fallback | Member C |
 | Dashboard / activity log | Django + HTMX (Python, already in base); SSE for live txn stream | Member A (shared) |
 
 The existing repo is a Django/Docker/Postgres/Celery base — agent, dashboard, and ledger live there. The React Native app is a sibling project; talks to Django over signed REST + Expo push tokens.

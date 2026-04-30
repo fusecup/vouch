@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "Vouch",
+    "slug": "vouch",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "vouch",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "co.vouch.app"
+    },
+    "android": {
+      "package": "co.vouch.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#000000"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-system-ui",
+        {
+          "userInterfaceStyle": "dark"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
