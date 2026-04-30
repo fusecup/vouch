@@ -230,3 +230,6 @@ backup/
 
 # Claude
 .claude/settings.local.json
+
+# Generated demo data
+scripts/data/

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block page_title %}
+    Activity Dashboard Disabled
+{% endblock page_title %}
+{% block content %}
+    <div class="mx-auto mt-20 w-full max-w-2xl px-4 sm:px-0">
+        <c-uikit.card>
+            <c-uikit.card.header class="space-y-3 border-b border-border/60 px-6 py-6 text-center">
+                <div class="mx-auto">
+                    <c-uikit.badge variant="outline">
+                        Dashboard Offline
+                    </c-uikit.badge>
+                </div>
+                <c-uikit.card.title class="text-2xl tracking-tight">Activity dashboard is currently disabled</c-uikit.card.title>
+                <c-uikit.card.description>
+                    The feature flag is turned off for this environment.
+                </c-uikit.card.description>
+            </c-uikit.card.header>
+            <c-uikit.card.content class="px-6 py-6">
+                <c-uikit.alert>
+                    Set <span class="font-mono text-xs">VOUCH_ACTIVITY_DASHBOARD_ENABLED=true</span> and refresh the page to enable the dashboard.
+                </c-uikit.alert>
+            </c-uikit.card.content>
+        </c-uikit.card>
+    </div>
+{% endblock content %}

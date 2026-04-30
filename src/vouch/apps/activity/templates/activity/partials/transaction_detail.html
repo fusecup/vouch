@@ -1,0 +1,40 @@
+{% if transaction %}
+    <c-uikit.card>
+        <c-uikit.card.header class="border-b border-border/60 px-5 py-4">
+            <c-uikit.card.title class="text-base">Transaction Detail</c-uikit.card.title>
+            <c-uikit.card.description>Sandbox data for the selected transaction.</c-uikit.card.description>
+        </c-uikit.card.header>
+        <c-uikit.card.content class="space-y-4 p-5">
+            <dl class="space-y-3 text-sm">
+                <div class="flex items-start justify-between gap-4">
+                    <dt class="text-muted-foreground">ID</dt>
+                    <dd class="max-w-[18rem] break-all font-mono text-xs text-foreground">{{ transaction.transaction_id }}</dd>
+                </div>
+                <div class="flex items-start justify-between gap-4">
+                    <dt class="text-muted-foreground">Date</dt>
+                    <dd class="font-medium text-foreground">{{ transaction.date }}</dd>
+                </div>
+                <div class="flex items-start justify-between gap-4">
+                    <dt class="text-muted-foreground">Amount</dt>
+                    <dd class="font-medium text-foreground">£{{ transaction.amount }}</dd>
+                </div>
+                <div class="flex items-start justify-between gap-4">
+                    <dt class="text-muted-foreground">Pending</dt>
+                    <dd class="font-medium text-foreground">{% if transaction.pending %}Yes{% else %}No{% endif %}</dd>
+                </div>
+                <div class="flex items-start justify-between gap-4">
+                    <dt class="text-muted-foreground">Account</dt>
+                    <dd class="max-w-[18rem] break-all font-mono text-xs text-foreground">{{ transaction.account_id }}</dd>
+                </div>
+            </dl>
+            <details class="rounded-md border border-border/80 bg-muted/20 p-3">
+                <summary class="cursor-pointer text-sm font-medium text-foreground">Raw sandbox JSON</summary>
+                <pre class="mt-3 max-h-80 overflow-auto rounded-md border border-border/60 bg-background p-3 text-xs text-muted-foreground">{{ transaction_json }}</pre>
+            </details>
+        </c-uikit.card.content>
+    </c-uikit.card>
+{% else %}
+    <c-uikit.alert variant="destructive">
+        Transaction not found in the current fetch window.
+    </c-uikit.alert>
+{% endif %}

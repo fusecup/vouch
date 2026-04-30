@@ -13,6 +13,7 @@ urlpatterns = [
     path("admin/", admin_site.urls),
     path("", welcome, name="welcome"),
     path("design-system/", design_system, name="design_system"),
+    path("d/", include("activity.urls")),
     path("robots.txt", robots_txt, name="robots_txt"),
 ]
 if settings.DEBUG:

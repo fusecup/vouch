@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block page_title %}
+    Activity Dashboard
+{% endblock page_title %}
+{% block content %}
+    <div class="bg-background px-4 py-10 sm:px-6 lg:px-10">
+        <div class="mx-auto max-w-7xl space-y-8">
+            <section class="flex flex-col gap-4 border-b border-border/60 pb-6 sm:flex-row sm:items-start sm:justify-between">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-3xl font-semibold tracking-tight text-foreground">Vouch Activity Dashboard</h1>
+                        <c-uikit.badge variant="secondary">
+                            {{ source_mode }}
+                        </c-uikit.badge>
+                    </div>
+                    <p class="text-sm text-muted-foreground">Last {{ lookback_days }} days of transactions and risk activity.</p>
+                </div>
+                <c-uikit.button href="{% url 'activity:dashboard' %}?last_refreshed=now" size="sm">
+                    Refresh
+                </c-uikit.button>
+            </section>
+
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <c-uikit.card class="shadow-sm">
+                    <c-uikit.card.content class="space-y-2 p-5">
+                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Transactions in Range</p>
+                        <p class="text-3xl font-semibold tracking-tight text-card-foreground">{{ total_transactions }}</p>
+                    </c-uikit.card.content>
+                </c-uikit.card>
+                <c-uikit.card class="shadow-sm">
+                    <c-uikit.card.content class="space-y-2 p-5">
+                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tier 0 Executed</p>
+                        <p class="text-3xl font-semibold tracking-tight text-card-foreground">{{ tier0_count }}</p>
+                    </c-uikit.card.content>
+                </c-uikit.card>
+                <c-uikit.card class="shadow-sm">
+                    <c-uikit.card.content class="space-y-2 p-5">
+                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Connection</p>
+                        <p class="text-2xl font-semibold tracking-tight text-card-foreground">{{ source_mode }}</p>
+                    </c-uikit.card.content>
+                </c-uikit.card>
+                <c-uikit.card class="shadow-sm">
+                    <c-uikit.card.content class="space-y-2 p-5">
+                        <p class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Streaming</p>
+                        <p class="text-2xl font-semibold tracking-tight text-card-foreground">
+                            {% if streaming_enabled %}On{% else %}Off{% endif %}
+                        </p>
+                    </c-uikit.card.content>
+                </c-uikit.card>
+            </div>
+
+            {% if dashboard_error %}
+                <c-uikit.alert variant="destructive">
+                    {{ dashboard_error }}
+                </c-uikit.alert>
+            {% endif %}
+
+            <div class="grid gap-6 lg:grid-cols-3">
+                <c-uikit.card class="lg:col-span-2 overflow-hidden shadow-sm">
+                    <c-uikit.card.header class="border-b border-border/60 px-5 py-4">
+                        <c-uikit.card.title class="text-base">Transactions</c-uikit.card.title>
+                        <c-uikit.card.description>Click a merchant to inspect transaction detail.</c-uikit.card.description>
+                    </c-uikit.card.header>
+                    <c-uikit.card.content class="p-0">
+                        <c-uikit.table>
+                            <thead class="border-b border-border bg-muted/50">
+                                <tr>
+                                    <th class="h-11 px-5 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date</th>
+                                    <th class="h-11 px-5 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">Merchant</th>
+                                    <th class="h-11 px-5 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">Amount</th>
+                                    <th class="h-11 px-5 text-left align-middle text-xs font-semibold uppercase tracking-wide text-muted-foreground">Category</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for txn in transactions %}
+                                    <tr class="border-b border-border/70 transition-colors hover:bg-muted/20">
+                                        <td class="px-5 py-3 text-sm text-foreground">{{ txn.date }}</td>
+                                        <td class="px-5 py-3 text-sm">
+                                            <button class="text-left font-medium text-primary underline-offset-4 hover:underline"
+                                                    hx-get="{% url 'activity:transaction_detail' %}?transaction_id={{ txn.transaction_id|urlencode }}"
+                                                    hx-target="#transaction-detail"
+                                                    hx-swap="innerHTML"
+                                                    hx-trigger="click">
+                                                {{ txn.name|default:"-" }}
+                                            </button>
+                                        </td>
+                                        <td class="px-5 py-3 text-sm font-medium text-foreground">£{{ txn.amount }}</td>
+                                        <td class="px-5 py-3 text-sm text-muted-foreground">
+                                            {% if txn.category %}
+                                                {{ txn.category.0 }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="px-5 py-10 text-center text-sm text-muted-foreground">
+                                            No transactions found in this date range.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </c-uikit.table>
+                    </c-uikit.card.content>
+                </c-uikit.card>
+                <div id="transaction-detail" class="lg:sticky lg:top-24 lg:self-start">
+                    <c-uikit.card class="shadow-sm">
+                        <c-uikit.card.content class="p-5">
+                            <p class="text-sm text-muted-foreground">Select a transaction to view sandbox details.</p>
+                        </c-uikit.card.content>
+                    </c-uikit.card>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

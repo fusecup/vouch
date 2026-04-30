@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "common.apps.CommonConfig",
     "accounts.apps.AccountsConfig",
     "fc_uikit.apps.FcUikitConfig",
+    "activity.apps.ActivityConfig",
     # Local Apps
     # Django Core
     "django.contrib.admin",
@@ -486,3 +487,38 @@ ENABLE_GDPR_COOKIE_BANNER = bool(strtobool(os.getenv("ENABLE_GDPR_COOKIE_BANNER"
 X_FRAME_OPTIONS = "SAMEORIGIN"
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# Plaid and dashboard settings
+PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID", "")
+PLAID_SECRET = os.getenv("PLAID_SECRET", "")
+PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
+PLAID_ACCESS_TOKEN = os.getenv("PLAID_ACCESS_TOKEN", "")
+PLAID_USE_MOCK = bool(strtobool(os.getenv("PLAID_USE_MOCK", "true")))
+PLAID_MOCK_DATA = os.getenv("PLAID_MOCK_DATA", "")
+
+VOUCH_ACTIVITY_DASHBOARD_ENABLED = bool(strtobool(os.getenv("VOUCH_ACTIVITY_DASHBOARD_ENABLED", "true")))
+VOUCH_PLAID_TRANSACTION_LOOKBACK_DAYS = int(os.getenv("VOUCH_PLAID_TRANSACTION_LOOKBACK_DAYS", "90"))
+VOUCH_PLAID_TRANSACTION_PAGE_SIZE = int(os.getenv("VOUCH_PLAID_TRANSACTION_PAGE_SIZE", "100"))
+
+# PRD phases 2-7 settings
+VOUCH_KNOWN_COUNTERPARTIES = [value for value in os.getenv("VOUCH_KNOWN_COUNTERPARTIES", "").split(",") if value]
+VOUCH_TIER0_MAX_AMOUNT_GBP = float(os.getenv("VOUCH_TIER0_MAX_AMOUNT_GBP", "1000"))
+VOUCH_TIER1_MAX_AMOUNT_GBP = float(os.getenv("VOUCH_TIER1_MAX_AMOUNT_GBP", "10000"))
+VOUCH_HARD_BLOCK_UNKNOWN_OVER_GBP = float(os.getenv("VOUCH_HARD_BLOCK_UNKNOWN_OVER_GBP", "5000"))
+VOUCH_ALWAYS_TIER2_OVER_GBP = float(os.getenv("VOUCH_ALWAYS_TIER2_OVER_GBP", "25000"))
+VOUCH_MAX_TIER1_CARDS_PER_DAY = int(os.getenv("VOUCH_MAX_TIER1_CARDS_PER_DAY", "20"))
+VOUCH_TIER1_FALLBACK_MINUTES = int(os.getenv("VOUCH_TIER1_FALLBACK_MINUTES", "10"))
+VOUCH_TIER2_WINDOW_MINUTES = int(os.getenv("VOUCH_TIER2_WINDOW_MINUTES", "30"))
+VOUCH_TIER2_MIN_APPROVERS = int(os.getenv("VOUCH_TIER2_MIN_APPROVERS", "3"))
+VOUCH_TIER2_MAX_APPROVERS = int(os.getenv("VOUCH_TIER2_MAX_APPROVERS", "4"))
+VOUCH_TIER0_REVERSAL_MINUTES = int(os.getenv("VOUCH_TIER0_REVERSAL_MINUTES", "60"))
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+VOUCH_ANTHROPIC_HAIKU_MODEL = os.getenv("VOUCH_ANTHROPIC_HAIKU_MODEL", "claude-3-5-haiku-latest")
+VOUCH_ANTHROPIC_OPUS_MODEL = os.getenv("VOUCH_ANTHROPIC_OPUS_MODEL", "claude-3-opus-latest")
+
+SPECTER_API_KEY = os.getenv("SPECTER_API_KEY", "")
+SPECTER_BASE_URL = os.getenv("SPECTER_BASE_URL", "")
+SPECTER_LIVE = bool(strtobool(os.getenv("SPECTER_LIVE", "false")))
+
+SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "")
