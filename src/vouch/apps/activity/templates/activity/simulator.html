@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block page_title %}Simulator{% endblock page_title %}
+{% block content %}
+  <section class="px-4 py-8">
+    <h1 class="mb-4 text-2xl font-semibold">Fake Data Simulator</h1>
+    {% include "activity/_nav.html" %}
+    <p class="mb-4 text-sm text-muted-foreground">Run presets to generate edge-case payment intents for fraud testing across queue/session pages.</p>
+    {% csrf_token %}
+    <div class="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+      {% for key, preset in presets.items %}
+        <button type="button" class="rounded border p-3 text-left" onclick="runPreset('{{ key }}')">
+          <div class="font-medium">{{ key }}</div>
+          <div class="text-xs text-muted-foreground">{{ preset.counterparty }} / £{{ preset.amount_gbp }}</div>
+        </button>
+      {% endfor %}
+    </div>
+    <h2 class="mb-2 text-lg font-semibold">Recent simulated intents</h2>
+    <div class="overflow-x-auto rounded border">
+      <table class="w-full text-sm">
+        <thead class="bg-muted"><tr><th class="p-2 text-left">External</th><th class="p-2 text-left">Counterparty</th><th class="p-2 text-left">Tier</th><th class="p-2 text-left">Status</th><th class="p-2 text-left">Run</th></tr></thead>
+        <tbody>
+          {% for intent in simulated %}
+            <tr class="border-t"><td class="p-2">{{ intent.external_id }}</td><td class="p-2">{{ intent.counterparty.name|default:"-" }}</td><td class="p-2">{{ intent.tier }}</td><td class="p-2">{{ intent.status }}</td><td class="p-2">{{ intent.scenario_run_id }}</td></tr>
+          {% empty %}
+            <tr><td colspan="5" class="p-4 text-muted-foreground">No simulator runs yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <script>
+    async function runPreset(preset) {
+      const response = await fetch("{% url 'activity:simulator_run_api' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")?.value || "",
+        },
+        body: JSON.stringify({ preset }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.error || "Failed to run simulator preset");
+        return;
+      }
+      window.location.reload();
+    }
+  </script>
+{% endblock content %}

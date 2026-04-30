@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block page_title %}Transactions{% endblock page_title %}
+{% block content %}
+  <section class="px-4 py-8">
+    <h1 class="mb-2 text-2xl font-semibold">Transactions</h1>
+    <p class="mb-4 text-sm text-muted-foreground">Source: {{ source_mode }}. Lookback: {{ lookback_days }} days.</p>
+    {% include "activity/_nav.html" %}
+    {% if dashboard_error %}
+      <div class="mb-3 rounded border border-red-300 bg-red-50 p-3 text-red-700">{{ dashboard_error }}</div>
+    {% endif %}
+    <div class="grid gap-6 lg:grid-cols-3">
+      <div class="lg:col-span-2 overflow-x-auto rounded border">
+        <table class="w-full text-sm">
+          <thead class="bg-muted">
+            <tr><th class="p-2 text-left">Date</th><th class="p-2 text-left">Merchant</th><th class="p-2 text-left">Amount</th></tr>
+          </thead>
+          <tbody>
+            {% for txn in transactions %}
+              <tr class="border-t">
+                <td class="p-2">{{ txn.date }}</td>
+                <td class="p-2">
+                  <button class="underline" hx-get="{% url 'activity:transaction_detail' %}?transaction_id={{ txn.transaction_id|urlencode }}" hx-target="#transaction-detail" hx-swap="innerHTML">{{ txn.name|default:"-" }}</button>
+                </td>
+                <td class="p-2">£{{ txn.amount }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="3" class="p-4 text-muted-foreground">No transactions found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div id="transaction-detail" class="rounded border p-4 text-sm text-muted-foreground">Select a transaction to view details.</div>
+    </div>
+  </section>
+{% endblock content %}

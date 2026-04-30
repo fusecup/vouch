@@ -6,48 +6,72 @@
 @plugin "@tailwindcss/typography";
 
 
-/* Pasted TweakCN CSS ======================================= */
+/* Vouch Design System (aligned to design.md) ==================== */
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
 
+/* 1) Design Tokens ------------------------------------------------ */
 :root {
-  --background: oklch(0.9232 0.0026 48.7171);
-  --foreground: oklch(0.2795 0.0368 260.0310);
-  --card: oklch(0.9699 0.0013 106.4238);
-  --card-foreground: oklch(0.2795 0.0368 260.0310);
-  --popover: oklch(0.9699 0.0013 106.4238);
-  --popover-foreground: oklch(0.2795 0.0368 260.0310);
-  --primary: oklch(0.5854 0.2041 277.1173);
-  --primary-foreground: oklch(1.0000 0 0);
-  --secondary: oklch(0.8687 0.0043 56.3660);
-  --secondary-foreground: oklch(0.4461 0.0263 256.8018);
-  --muted: oklch(0.9232 0.0026 48.7171);
-  --muted-foreground: oklch(0.5510 0.0234 264.3637);
-  --accent: oklch(0.9376 0.0260 321.9388);
-  --accent-foreground: oklch(0.3729 0.0306 259.7328);
-  --destructive: oklch(0.6368 0.2078 25.3313);
-  --destructive-foreground: oklch(1.0000 0 0);
-  --border: oklch(0.8687 0.0043 56.3660);
-  --input: oklch(0.8687 0.0043 56.3660);
-  --ring: oklch(0.5854 0.2041 277.1173);
-  --chart-1: oklch(0.5854 0.2041 277.1173);
-  --chart-2: oklch(0.5106 0.2301 276.9656);
-  --chart-3: oklch(0.4568 0.2146 277.0229);
-  --chart-4: oklch(0.3984 0.1773 277.3662);
-  --chart-5: oklch(0.3588 0.1354 278.6973);
-  --sidebar: oklch(0.8687 0.0043 56.3660);
-  --sidebar-foreground: oklch(0.2795 0.0368 260.0310);
-  --sidebar-primary: oklch(0.5854 0.2041 277.1173);
-  --sidebar-primary-foreground: oklch(1.0000 0 0);
-  --sidebar-accent: oklch(0.9376 0.0260 321.9388);
-  --sidebar-accent-foreground: oklch(0.3729 0.0306 259.7328);
-  --sidebar-border: oklch(0.8687 0.0043 56.3660);
-  --sidebar-ring: oklch(0.5854 0.2041 277.1173);
-  --font-sans: Plus Jakarta Sans, sans-serif;
-  --font-serif: Lora, serif;
+  --background: #f7f2e8;
+  --foreground: #0a0a0a;
+  --card: #fffdf8;
+  --card-foreground: #0a0a0a;
+  --popover: #fffdf8;
+  --popover-foreground: #0a0a0a;
+
+  --primary: #ff8a2e;
+  --primary-foreground: #0a0a0a;
+  --secondary: #efe7db;
+  --secondary-foreground: #6b5c45;
+  --muted: #f2ebdf;
+  --muted-foreground: #9a8e78;
+  --accent: #efe7db;
+  --accent-foreground: #6b5c45;
+  --destructive: #ff3b30;
+  --destructive-foreground: #ffffff;
+  --border: #e8e2d6;
+  --input: #e8e2d6;
+  --ring: #ff8a2e;
+
+  --chart-1: #ff8a2e;
+  --chart-2: #ff6a1a;
+  --chart-3: #8a2a05;
+  --chart-4: #ff3b30;
+  --chart-5: #5a5a5a;
+  --sidebar: #fffdf8;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #ff8a2e;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #efe7db;
+  --sidebar-accent-foreground: #6b5c45;
+  --sidebar-border: #e8e2d6;
+  --sidebar-ring: #ff8a2e;
+
+  /* Bloom gradient tokens */
+  --bloom-start: #ff6a1a;
+  --bloom-mid: #8a2a05;
+  --bloom-warm-black: #1a0a04;
+  --bloom-black: #050505;
+  --bloom-edge: #000000;
+
+  /* Tier accents */
+  --tier0: #5a5a5a;
+  --tier1: #ff8a2e;
+  --tier2: #ff3b30;
+
+  /* Ink hierarchy */
+  --ink-primary: #ffffff;
+  --ink-mono: #c9b89a;
+  --ink-muted: #5a5a5a;
+  --card-ink-primary: #0a0a0a;
+  --card-ink-secondary: #6b5c45;
+  --card-ink-muted: #9a8e78;
+
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-serif: Georgia, serif;
   --font-mono: Roboto Mono, monospace;
-  --radius: 1.25rem;
+  --radius: 1rem;
   --shadow-x: 2px;
   --shadow-y: 2px;
   --shadow-blur: 10px;
@@ -67,42 +91,40 @@
 }
 
 .dark {
-  --background: oklch(0.2244 0.0074 67.4370);
-  --foreground: oklch(0.9288 0.0126 255.5078);
-  --card: oklch(0.2801 0.0080 59.3379);
-  --card-foreground: oklch(0.9288 0.0126 255.5078);
-  --popover: oklch(0.2801 0.0080 59.3379);
-  --popover-foreground: oklch(0.9288 0.0126 255.5078);
-  --primary: oklch(0.6801 0.1583 276.9349);
-  --primary-foreground: oklch(0.2244 0.0074 67.4370);
-  --secondary: oklch(0.3359 0.0077 59.4197);
-  --secondary-foreground: oklch(0.8717 0.0093 258.3382);
-  --muted: oklch(0.2287 0.0074 67.4469);
-  --muted-foreground: oklch(0.7137 0.0192 261.3246);
-  --accent: oklch(0.3896 0.0074 59.4734);
-  --accent-foreground: oklch(0.8717 0.0093 258.3382);
-  --destructive: oklch(0.6368 0.2078 25.3313);
-  --destructive-foreground: oklch(0.2244 0.0074 67.4370);
-  --border: oklch(0.3359 0.0077 59.4197);
-  --input: oklch(0.3359 0.0077 59.4197);
-  --ring: oklch(0.6801 0.1583 276.9349);
-  --chart-1: oklch(0.6801 0.1583 276.9349);
-  --chart-2: oklch(0.5854 0.2041 277.1173);
-  --chart-3: oklch(0.5106 0.2301 276.9656);
-  --chart-4: oklch(0.4568 0.2146 277.0229);
-  --chart-5: oklch(0.3984 0.1773 277.3662);
-  --sidebar: oklch(0.3359 0.0077 59.4197);
-  --sidebar-foreground: oklch(0.9288 0.0126 255.5078);
-  --sidebar-primary: oklch(0.6801 0.1583 276.9349);
-  --sidebar-primary-foreground: oklch(0.2244 0.0074 67.4370);
-  --sidebar-accent: oklch(0.3896 0.0074 59.4734);
-  --sidebar-accent-foreground: oklch(0.8717 0.0093 258.3382);
-  --sidebar-border: oklch(0.3359 0.0077 59.4197);
-  --sidebar-ring: oklch(0.6801 0.1583 276.9349);
-  --font-sans: Plus Jakarta Sans, sans-serif;
-  --font-serif: Lora, serif;
+  --background: #050505;
+  --foreground: #ffffff;
+  --card: #171311;
+  --card-foreground: #ffffff;
+  --popover: #171311;
+  --popover-foreground: #ffffff;
+
+  --primary: #ff8a2e;
+  --primary-foreground: #0a0a0a;
+  --secondary: #2a211d;
+  --secondary-foreground: #c9b89a;
+  --muted: #1d1714;
+  --muted-foreground: #9a8e78;
+  --accent: #2a211d;
+  --accent-foreground: #c9b89a;
+  --destructive: #ff3b30;
+  --destructive-foreground: #ffffff;
+  --border: #3a2e28;
+  --input: #3a2e28;
+  --ring: #ff8a2e;
+
+  --sidebar: #171311;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ff8a2e;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #2a211d;
+  --sidebar-accent-foreground: #c9b89a;
+  --sidebar-border: #3a2e28;
+  --sidebar-ring: #ff8a2e;
+
+  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-serif: Georgia, serif;
   --font-mono: Roboto Mono, monospace;
-  --radius: 1.25rem;
+  --radius: 1rem;
   --shadow-x: 2px;
   --shadow-y: 2px;
   --shadow-blur: 10px;
@@ -180,7 +202,7 @@
     @apply bg-background text-foreground;
   }
 }
-/* End of Pasted TweakCN CSS ================================ */
+/* 2) Base Layer --------------------------------------------------- */
 
 
 @layer base {
@@ -218,6 +240,74 @@
 .htmx-request.load-indicator {
   opacity: 1;
   display: inline;
+}
+
+/* 3) Vouch Surface + Type Utilities ------------------------------- */
+.vouch-bloom-surface {
+  background:
+    linear-gradient(
+      225deg,
+      var(--bloom-start) 0%,
+      var(--bloom-mid) 18%,
+      var(--bloom-warm-black) 45%,
+      var(--bloom-black) 75%,
+      var(--bloom-edge) 100%
+    ),
+    linear-gradient(rgb(0 0 0 / 18%), rgb(0 0 0 / 18%));
+}
+
+.vouch-card-daylight {
+  background-color: var(--card);
+  border-color: var(--border);
+  color: var(--card-ink-primary);
+}
+
+.vouch-ink-primary {
+  color: var(--ink-primary);
+}
+
+.vouch-ink-mono {
+  color: var(--ink-mono);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.vouch-ink-muted {
+  color: var(--ink-muted);
+}
+
+.vouch-amount-hero {
+  font-family: var(--font-serif);
+  font-size: clamp(2.5rem, 5vw, 4rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.vouch-amount-list {
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 2.6vw, 2.25rem);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.vouch-caption {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.vouch-tier0 {
+  color: var(--tier0);
+}
+
+.vouch-tier1 {
+  color: var(--tier1);
+}
+
+.vouch-tier2 {
+  color: var(--tier2);
 }
 
 /* Code syntax highlighting */

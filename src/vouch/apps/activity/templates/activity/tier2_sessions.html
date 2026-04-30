@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block page_title %}Tier 2 Sessions{% endblock page_title %}
+{% block content %}
+  <section class="px-4 py-8">
+    <h1 class="mb-4 text-2xl font-semibold">Tier 2 Sessions</h1>
+    {% include "activity/_nav.html" %}
+    <div class="overflow-x-auto rounded border">
+      <table class="w-full text-sm">
+        <thead class="bg-muted"><tr><th class="p-2 text-left">Session</th><th class="p-2 text-left">Payment Intent</th><th class="p-2 text-left">Status</th><th class="p-2 text-left">Required Approvers</th></tr></thead>
+        <tbody>
+          {% for session in sessions %}
+            <tr class="border-t"><td class="p-2">{{ session.id }}</td><td class="p-2">{{ session.payment_intent_id }}</td><td class="p-2">{{ session.status }}</td><td class="p-2">{{ session.required_approvers }}</td></tr>
+          {% empty %}
+            <tr><td colspan="4" class="p-4 text-muted-foreground">No Tier 2 sessions created.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock content %}

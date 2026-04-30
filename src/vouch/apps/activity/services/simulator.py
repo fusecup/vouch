@@ -1,5 +1,6 @@
 import uuid
 from decimal import Decimal
+from random import choice, randint, random
 
 from activity.models import ApprovalAttestation, ApprovalSession, PaymentIntent
 from activity.services.ledger import execute_payment
@@ -15,6 +16,27 @@ PRESET_SCENARIOS: dict[str, dict] = {
     "coerced_tier2": {"counterparty": "Acme Treasury", "amount_gbp": "31000", "anomaly_score": 80},
     "swipe_overload": {"counterparty": "Rapid Vendor", "amount_gbp": "1200", "anomaly_score": 20},
 }
+
+
+SIM_COUNTERPARTIES = [
+    ("Coffee Beans UK", "coffeebeans.co.uk"),
+    ("Northwind Logistics", "northwind-logistics.com"),
+    ("Rapid Vendor", "rapidvendor.io"),
+    ("Acme Treasury", "acme-treasury.net"),
+    ("Shadow Supplies Ltd", "shadowsupplies.biz"),
+]
+
+
+def _build_metadata(preset: str, actor_id: int | None, run_id: str) -> dict:
+    return {
+        "preset": preset,
+        "actor_id": actor_id,
+        "merchant_category": choice(["Hospitality", "Payroll", "SaaS", "Logistics", "Consulting"]),
+        "geo_country": choice(["GB", "US", "DE", "FR", "NL"]),
+        "device_id": f"sim-device-{randint(1000, 9999)}",
+        "velocity_per_hour": randint(1, 25),
+        "run_id": run_id,
+    }
 
 
 def create_scenario_intent(preset: str, actor_id: int | None = None) -> PaymentIntent:
@@ -40,7 +62,7 @@ def create_scenario_intent(preset: str, actor_id: int | None = None) -> PaymentI
         scenario_source="simulator",
         scenario_run_id=run_id,
         scenario_tags=[preset],
-        metadata={"preset": preset, "actor_id": actor_id},
+        metadata=_build_metadata(preset=preset, actor_id=actor_id, run_id=run_id),
     )
 
     if preset == "known_low_risk" or tier == PaymentIntent.Tier.TIER0:
@@ -78,3 +100,59 @@ def create_scenario_intent(preset: str, actor_id: int | None = None) -> PaymentI
                 )
 
     return intent
+
+
+def create_dynamic_transactions(
+    *,
+    count: int,
+    min_amount: Decimal,
+    max_amount: Decimal,
+    actor_id: int | None = None,
+    require_all_tiers: bool = True,
+) -> list[PaymentIntent]:
+    if count <= 0:
+        return []
+    if min_amount <= 0 or max_amount <= 0 or min_amount > max_amount:
+        raise ValueError("Invalid amount range")
+
+    created: list[PaymentIntent] = []
+    run_id = uuid.uuid4().hex[:12]
+    tier_seed = [PaymentIntent.Tier.TIER0, PaymentIntent.Tier.TIER1, PaymentIntent.Tier.TIER2] if require_all_tiers else []
+
+    for i in range(count):
+        counterparty_name, domain = choice(SIM_COUNTERPARTIES)
+        counterparty = upsert_counterparty(counterparty_name, {"domain": domain})
+        amount_pennies = randint(int(min_amount * 100), int(max_amount * 100))
+        amount = Decimal(amount_pennies) / Decimal("100")
+        anomaly = randint(0, 95)
+        tier, reasons, risk_score = recommend_tier(amount, counterparty.name, anomaly)
+        if tier_seed and i < len(tier_seed):
+            tier = tier_seed[i]
+            reasons = [*reasons, "Forced tier coverage for simulator"]
+
+        intent = PaymentIntent.objects.create(
+            external_id=f"sim-dyn-{run_id}-{i}",
+            provider="simulator",
+            counterparty=counterparty,
+            amount_gbp=amount,
+            currency="GBP",
+            risk_score=risk_score,
+            risk_reasons=reasons,
+            tier=tier,
+            anomaly_score=anomaly,
+            scenario_source="simulator",
+            scenario_run_id=run_id,
+            scenario_tags=["dynamic", "auto-generated"],
+            metadata={
+                **_build_metadata(preset="dynamic", actor_id=actor_id, run_id=run_id),
+                "index": i,
+                "randomized": True,
+                "edge_case": random() > 0.7,
+            },
+        )
+        if tier == PaymentIntent.Tier.TIER0:
+            execute_payment(intent, provider="simulator-ledger")
+        else:
+            create_approval_session(intent)
+        created.append(intent)
+    return created

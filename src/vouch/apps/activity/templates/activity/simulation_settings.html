@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block page_title %}Simulation Settings{% endblock page_title %}
+{% block content %}
+  <section class="px-4 py-8">
+    <h1 class="mb-2 text-2xl font-semibold">Simulation Settings</h1>
+    <p class="mb-4 text-sm text-muted-foreground">Generate real-time backend transactions by preset and volume to populate all tiers and edge cases.</p>
+    {% include "activity/_nav.html" %}
+    {% csrf_token %}
+    <div class="mb-4 rounded border p-4">
+      <h2 class="mb-3 text-lg font-semibold">Batch Scenario Generator</h2>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        {% for key, preset in presets.items %}
+          <label class="rounded border p-3">
+            <div class="font-medium">{{ key }}</div>
+            <div class="mb-2 text-xs text-muted-foreground">{{ preset.counterparty }} / £{{ preset.amount_gbp }}</div>
+            <input type="number" min="0" max="100" value="{{ default_batch_size }}" data-preset="{{ key }}" class="w-24 rounded border px-2 py-1 text-sm">
+          </label>
+        {% endfor %}
+      </div>
+      <button type="button" onclick="runBatch()" class="mt-4 rounded border px-3 py-2 text-sm">Create Real-Time Batch</button>
+      <p id="batch-result" class="mt-3 text-sm text-muted-foreground"></p>
+    </div>
+    <div class="rounded border p-4">
+      <h2 class="mb-3 text-lg font-semibold">Dynamic Transaction Generator</h2>
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-4">
+        <label class="text-sm">Count <input id="dyn-count" type="number" min="1" max="1000" value="100" class="mt-1 w-full rounded border px-2 py-1"></label>
+        <label class="text-sm">Min Amount (£) <input id="dyn-min" type="number" min="1" value="20" class="mt-1 w-full rounded border px-2 py-1"></label>
+        <label class="text-sm">Max Amount (£) <input id="dyn-max" type="number" min="1" value="50000" class="mt-1 w-full rounded border px-2 py-1"></label>
+        <label class="flex items-center gap-2 text-sm md:pt-6"><input id="dyn-tiers" type="checkbox" checked> Ensure all tiers</label>
+      </div>
+      <button type="button" onclick="runDynamic()" class="mt-4 rounded border px-3 py-2 text-sm">Generate Dynamic Transactions</button>
+      <p id="dynamic-result" class="mt-3 text-sm text-muted-foreground"></p>
+    </div>
+  </section>
+  <script>
+    async function runBatch() {
+      const inputs = document.querySelectorAll("input[data-preset]");
+      const counts = {};
+      inputs.forEach((input) => {
+        counts[input.dataset.preset] = parseInt(input.value || "0", 10);
+      });
+      const response = await fetch("{% url 'activity:simulator_batch_run_api' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")?.value || "",
+        },
+        body: JSON.stringify({ counts }),
+      });
+      const data = await response.json();
+      const result = document.getElementById("batch-result");
+      if (!response.ok) {
+        result.textContent = data.error || "Unable to create simulations.";
+        return;
+      }
+      result.textContent = `Created ${data.created_count} transactions in backend. Refresh Transactions/Tier pages to view updates.`;
+    }
+
+    async function runDynamic() {
+      const payload = {
+        count: parseInt(document.getElementById("dyn-count").value || "100", 10),
+        min_amount: document.getElementById("dyn-min").value || "20",
+        max_amount: document.getElementById("dyn-max").value || "50000",
+        require_all_tiers: document.getElementById("dyn-tiers").checked,
+      };
+      const response = await fetch("{% url 'activity:simulator_dynamic_generate_api' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")?.value || "",
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      const result = document.getElementById("dynamic-result");
+      if (!response.ok) {
+        result.textContent = data.error || "Unable to dynamically generate transactions.";
+        return;
+      }
+      result.textContent = `Created ${data.created_count} transactions (Tier0 ${data.tiers.tier0}, Tier1 ${data.tiers.tier1}, Tier2 ${data.tiers.tier2}) in run ${data.run_id}.`;
+    }
+  </script>
+{% endblock content %}

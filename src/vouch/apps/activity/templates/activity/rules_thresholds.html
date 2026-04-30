@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block page_title %}Rules and Thresholds{% endblock page_title %}
+{% block content %}
+  <section class="px-4 py-8">
+    <h1 class="mb-4 text-2xl font-semibold">Rules and Thresholds</h1>
+    {% include "activity/_nav.html" %}
+    <form id="rules-form" class="mb-6 grid grid-cols-1 gap-3 rounded border p-4 md:grid-cols-2">
+      {% csrf_token %}
+      <label>Tier 0 max <input class="ml-2 rounded border px-2 py-1" name="tier0_max" value="{{ thresholds.tier0_max }}"></label>
+      <label>Tier 1 max <input class="ml-2 rounded border px-2 py-1" name="tier1_max" value="{{ thresholds.tier1_max }}"></label>
+      <label>Hard block unknown over <input class="ml-2 rounded border px-2 py-1" name="hard_block_unknown_over" value="{{ thresholds.hard_block_unknown_over }}"></label>
+      <label>Always Tier 2 over <input class="ml-2 rounded border px-2 py-1" name="always_tier2_over" value="{{ thresholds.always_tier2_over }}"></label>
+      <button type="button" class="rounded border px-3 py-2 md:col-span-2" onclick="submitRules()">Validate and save audit event</button>
+    </form>
+    <h2 class="mb-2 text-lg font-semibold">Audit history</h2>
+    <div class="overflow-x-auto rounded border">
+      <table class="w-full text-sm">
+        <thead class="bg-muted"><tr><th class="p-2 text-left">When</th><th class="p-2 text-left">Key</th><th class="p-2 text-left">Old</th><th class="p-2 text-left">New</th><th class="p-2 text-left">Actor</th></tr></thead>
+        <tbody>
+          {% for event in config_events %}
+            <tr class="border-t"><td class="p-2">{{ event.created_at }}</td><td class="p-2">{{ event.key }}</td><td class="p-2">{{ event.old_value }}</td><td class="p-2">{{ event.new_value }}</td><td class="p-2">{{ event.changed_by.username|default:"system" }}</td></tr>
+          {% empty %}
+            <tr><td colspan="5" class="p-4 text-muted-foreground">No configuration updates recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <script>
+    async function submitRules() {
+      const form = document.getElementById("rules-form");
+      const payload = Object.fromEntries(new FormData(form).entries());
+      const response = await fetch("{% url 'activity:rules_thresholds_update_api' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]")?.value || "",
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        alert(data.error || "Unable to save");
+        return;
+      }
+      window.location.reload();
+    }
+  </script>
+{% endblock content %}

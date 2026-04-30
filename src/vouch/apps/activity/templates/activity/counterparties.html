@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block page_title %}Counterparties{% endblock page_title %}
+{% block content %}
+  <section class="px-4 py-8">
+    <h1 class="mb-4 text-2xl font-semibold">Counterparties and Specter Risk</h1>
+    {% include "activity/_nav.html" %}
+    <div class="overflow-x-auto rounded border">
+      <table class="w-full text-sm">
+        <thead class="bg-muted"><tr><th class="p-2 text-left">Name</th><th class="p-2 text-left">Domain</th><th class="p-2 text-left">Known</th><th class="p-2 text-left">Specter Score</th></tr></thead>
+        <tbody>
+          {% for cp in counterparties %}
+            <tr class="border-t"><td class="p-2">{{ cp.name }}</td><td class="p-2">{{ cp.domain|default:"-" }}</td><td class="p-2">{% if cp.is_known %}Yes{% else %}No{% endif %}</td><td class="p-2">{{ cp.specter_quality_score }}</td></tr>
+          {% empty %}
+            <tr><td colspan="4" class="p-4 text-muted-foreground">No counterparties recorded.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock content %}

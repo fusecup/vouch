@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block page_title %}Receipts and Reversals{% endblock page_title %}
+{% block content %}
+  <section class="px-4 py-8">
+    <h1 class="mb-4 text-2xl font-semibold">Receipts and Reversals</h1>
+    {% include "activity/_nav.html" %}
+    <div class="overflow-x-auto rounded border">
+      <table class="w-full text-sm">
+        <thead class="bg-muted"><tr><th class="p-2 text-left">Receipt</th><th class="p-2 text-left">Payment</th><th class="p-2 text-left">Reverse until</th><th class="p-2 text-left">Action</th></tr></thead>
+        <tbody>
+          {% for receipt in receipts %}
+            <tr class="border-t">
+              <td class="p-2">{{ receipt.id }}</td>
+              <td class="p-2">{{ receipt.payment_intent_id }}</td>
+              <td class="p-2">{{ receipt.can_reverse_until }}</td>
+              <td class="p-2">
+                <form method="post" action="{% url 'activity:payment_reverse' receipt.payment_intent_id %}">
+                  {% csrf_token %}
+                  <button class="rounded border px-2 py-1 text-xs" type="submit">Request reversal</button>
+                </form>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="4" class="p-4 text-muted-foreground">No receipts available.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock content %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block page_title %}Activity Overview{% endblock page_title %}
+{% block content %}
+  <section class="px-4 py-8">
+    <h1 class="mb-4 text-2xl font-semibold">Activity Overview</h1>
+    {% include "activity/_nav.html" %}
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div class="rounded border p-4">Tier 0 executed: {{ tier0_count }}</div>
+      <div class="rounded border p-4">Tier 1 pending: {{ tier1_pending_count }}</div>
+      <div class="rounded border p-4">Tier 2 pending: {{ tier2_pending_count }}</div>
+      <div class="rounded border p-4">Receipts: {{ recent_receipts|length }}</div>
+    </div>
+    <h2 class="mt-8 mb-2 text-lg font-semibold">Recent payment intents</h2>
+    <div class="overflow-x-auto rounded border">
+      <table class="w-full text-sm">
+        <thead class="bg-muted">
+          <tr><th class="p-2 text-left">External ID</th><th class="p-2 text-left">Counterparty</th><th class="p-2 text-left">Tier</th><th class="p-2 text-left">Status</th></tr>
+        </thead>
+        <tbody>
+          {% for intent in recent_intents %}
+            <tr class="border-t"><td class="p-2">{{ intent.external_id }}</td><td class="p-2">{{ intent.counterparty.name|default:"-" }}</td><td class="p-2">{{ intent.tier }}</td><td class="p-2">{{ intent.status }}</td></tr>
+          {% empty %}
+            <tr><td colspan="4" class="p-4 text-muted-foreground">No payment intents yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock content %}

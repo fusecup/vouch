@@ -69,23 +69,48 @@
   <body {% block body_attributes %} {% endblock body_attributes %}>
     {% if request.user.is_authenticated %}
       <header class="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur supports-backdrop-filter:bg-background/75">
-        <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-10">
-          <div class="flex items-center gap-8">
+        <div class="mx-auto flex h-16 w-full max-w-[1200px] items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
+          <div class="flex items-center gap-3">
             <a href="{% url 'welcome' %}" class="text-base font-semibold tracking-tight text-foreground">vouch</a>
-            <nav class="hidden items-center gap-2 md:flex">
-              <c-uikit.button href="{% url 'activity:dashboard' %}"
-                              variant="{% if '/activity/' in request.path %}default{% else %}ghost{% endif %}"
-                              size="sm">
-                Activity
-              </c-uikit.button>
-              <c-uikit.button href="{% url 'design_system' %}"
-                              variant="{% if request.path == '/design-system/' %}default{% else %}ghost{% endif %}"
-                              size="sm">
-                Design System
-              </c-uikit.button>
-            </nav>
           </div>
+          <nav class="hidden flex-1 items-center gap-1 overflow-x-auto md:flex">
+            <a href="{% url 'activity:overview' %}" class="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">Overview</a>
+            <a href="{% url 'activity:transactions' %}" class="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">Transactions</a>
+            <a href="{% url 'activity:tier1_review' %}" class="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">Tier 1</a>
+            <a href="{% url 'activity:tier2_sessions' %}" class="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">Tier 2</a>
+            <a href="{% url 'activity:counterparties' %}" class="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">Counterparties</a>
+            <a href="{% url 'activity:receipts_reversals' %}" class="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">Receipts</a>
+            <a href="{% url 'activity:rules_thresholds' %}" class="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">Rules</a>
+            <a href="{% url 'activity:simulator' %}" class="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">Simulator</a>
+            <a href="{% url 'activity:simulation_settings' %}" class="inline-flex items-center rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground">Simulation Settings</a>
+          </nav>
           <div class="flex items-center gap-2">
+            <details class="relative md:hidden">
+              <summary class="inline-flex cursor-pointer list-none items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted">Menu</summary>
+              <div class="absolute right-0 mt-2 w-56 rounded-lg border border-border bg-popover p-2 shadow-md">
+                <a href="{% url 'activity:overview' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Overview</a>
+                <a href="{% url 'activity:transactions' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Transactions</a>
+                <a href="{% url 'activity:tier1_review' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Tier 1</a>
+                <a href="{% url 'activity:tier2_sessions' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Tier 2</a>
+                <a href="{% url 'activity:counterparties' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Counterparties</a>
+                <a href="{% url 'activity:receipts_reversals' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Receipts</a>
+                <a href="{% url 'activity:rules_thresholds' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Rules</a>
+                <a href="{% url 'activity:simulator' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Simulator</a>
+                <a href="{% url 'activity:simulation_settings' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Simulation Settings</a>
+              </div>
+            </details>
+            <a href="{% url 'activity:profile' %}"
+               class="hidden items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted md:inline-flex">
+              Profile
+            </a>
+            <details class="relative md:hidden">
+              <summary class="inline-flex cursor-pointer list-none items-center rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground shadow-sm transition hover:bg-muted">Profile</summary>
+              <div class="absolute right-0 mt-2 w-44 rounded-lg border border-border bg-popover p-2 shadow-md">
+                <a href="{% url 'activity:profile' %}" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Profile Home</a>
+                <a href="/a/email/" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Email</a>
+                <a href="/a/password/change/" class="block rounded-md px-2.5 py-1.5 text-sm text-popover-foreground transition hover:bg-muted">Password</a>
+              </div>
+            </details>
             <c-theme_toggle variant="secondary">
             </c-theme_toggle>
           </div>

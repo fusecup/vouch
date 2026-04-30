@@ -6,53 +6,418 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.paginator import Paginator
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import TemplateView
 
-from activity.models import ApprovalAttestation, ApprovalSession, PaymentIntent
+from activity.models import ApprovalAttestation, ApprovalSession, Counterparty, PaymentIntent, PolicyConfigEvent, Receipt
 from activity.services.ledger import execute_payment, reverse_payment
 from activity.services.plaid import PlaidConfigError, fetch_transactions
 from activity.services.risk import recommend_tier, upsert_counterparty
 from activity.services.router import create_approval_session, enforce_daily_swipe_limit, update_session_status
+from activity.services.simulator import PRESET_SCENARIOS, create_dynamic_transactions, create_scenario_intent
 from activity.services.specter import fetch_counterparty_signal
 
 
-class ActivityDashboardView(LoginRequiredMixin, TemplateView):
-    template_name = "activity/dashboard.html"
+def _intent_to_transaction(intent: PaymentIntent) -> dict:
+    return {
+        "transaction_id": f"intent-{intent.id}",
+        "date": intent.created_at.date().isoformat(),
+        "name": intent.counterparty.name if intent.counterparty else "Unknown",
+        "amount": str(intent.amount_gbp),
+        "pending": intent.status == PaymentIntent.Status.PENDING,
+        "account_id": intent.external_id,
+        "category": [f"Tier {intent.tier}"],
+        "source": intent.scenario_source or intent.provider,
+        "payment_intent_id": intent.id,
+        "status": intent.status,
+        "risk_score": intent.risk_score,
+        "risk_reasons": intent.risk_reasons,
+        "anomaly_score": intent.anomaly_score,
+        "metadata": intent.metadata,
+    }
+
+
+class BaseActivityPageView(LoginRequiredMixin, TemplateView):
+    page_title = "Activity"
+    template_name = "activity/overview.html"
+
+    def base_context(self, request: HttpRequest) -> dict:
+        return {
+            "page_title": self.page_title,
+            "tier0_count": PaymentIntent.objects.filter(tier=PaymentIntent.Tier.TIER0).count(),
+            "tier1_pending_count": PaymentIntent.objects.filter(
+                tier=PaymentIntent.Tier.TIER1, status=PaymentIntent.Status.PENDING
+            ).count(),
+            "tier2_pending_count": PaymentIntent.objects.filter(
+                tier=PaymentIntent.Tier.TIER2, status=PaymentIntent.Status.PENDING
+            ).count(),
+        }
 
     def get(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         if not settings.VOUCH_ACTIVITY_DASHBOARD_ENABLED:
             return render(request, "activity/dashboard_disabled.html")
-
         context = self.get_context_data(**kwargs)
-        context["last_refreshed"] = request.GET.get("last_refreshed", "")
-        try:
-            transactions, total = fetch_transactions()
-            context["transactions"] = transactions
-            context["total_transactions"] = total
-            context["dashboard_error"] = ""
-            # Keep the exact rendered transaction set for reliable HTMX detail lookups.
-            request.session["activity_dashboard_transactions"] = {
-                str(txn.get("transaction_id")): txn for txn in transactions if txn.get("transaction_id")
-            }
-        except PlaidConfigError as exc:
-            context["transactions"] = []
-            context["total_transactions"] = 0
-            context["dashboard_error"] = str(exc)
-            request.session["activity_dashboard_transactions"] = {}
-        except Exception as exc:  # pragma: no cover
-            context["transactions"] = []
-            context["total_transactions"] = 0
-            context["dashboard_error"] = f"Unable to load transactions: {exc}"
-            request.session["activity_dashboard_transactions"] = {}
-
-        context["source_mode"] = "Mock" if settings.PLAID_USE_MOCK else "Plaid Sandbox"
-        context["lookback_days"] = settings.VOUCH_PLAID_TRANSACTION_LOOKBACK_DAYS
-        context["tier0_count"] = PaymentIntent.objects.filter(tier=PaymentIntent.Tier.TIER0).count()
-        context["streaming_enabled"] = True
+        context.update(self.base_context(request))
         return render(request, self.template_name, context)
+
+
+class ActivityOverviewView(BaseActivityPageView):
+    template_name = "activity/overview.html"
+    page_title = "Overview"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        recent_intents = PaymentIntent.objects.select_related("counterparty").order_by("-created_at")[:10]
+        context["recent_intents"] = recent_intents
+        context["recent_receipts"] = Receipt.objects.select_related("payment_intent").order_by("-id")[:5]
+        return context
+
+
+class ActivityTransactionsView(BaseActivityPageView):
+    template_name = "activity/transactions.html"
+    page_title = "Transactions"
+
+    def get(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
+        if not settings.VOUCH_ACTIVITY_DASHBOARD_ENABLED:
+            return render(request, "activity/dashboard_disabled.html")
+        context = self.get_context_data(**kwargs)
+        context.update(self.base_context(request))
+        context["last_refreshed"] = request.GET.get("last_refreshed", "")
+        source_mode = getattr(settings, "VOUCH_ACTIVITY_TRANSACTIONS_SOURCE", "internal")
+        context["source_mode"] = source_mode.title()
+        context["lookback_days"] = settings.VOUCH_PLAID_TRANSACTION_LOOKBACK_DAYS
+        if source_mode == "plaid":
+            try:
+                transactions, total = fetch_transactions()
+                context["transactions"] = transactions
+                context["total_transactions"] = total
+                context["dashboard_error"] = ""
+            except PlaidConfigError as exc:
+                context["transactions"] = []
+                context["total_transactions"] = 0
+                context["dashboard_error"] = str(exc)
+            except Exception as exc:  # pragma: no cover
+                context["transactions"] = []
+                context["total_transactions"] = 0
+                context["dashboard_error"] = f"Unable to load transactions: {exc}"
+        else:
+            intents = PaymentIntent.objects.select_related("counterparty").order_by("-created_at")[:200]
+            transactions = [_intent_to_transaction(intent) for intent in intents]
+            context["transactions"] = transactions
+            context["total_transactions"] = len(transactions)
+            context["dashboard_error"] = ""
+        request.session["activity_dashboard_transactions"] = {
+            str(txn.get("transaction_id")): txn for txn in context["transactions"] if txn.get("transaction_id")
+        }
+        return render(request, self.template_name, context)
+
+
+class ActivityTier1ReviewView(BaseActivityPageView):
+    template_name = "activity/tier1_review.html"
+    page_title = "Tier 1 Review"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["queue"] = (
+            PaymentIntent.objects.filter(tier=PaymentIntent.Tier.TIER1, status=PaymentIntent.Status.PENDING)
+            .select_related("counterparty")
+            .order_by("created_at")[:100]
+        )
+        return context
+
+
+class ActivityTier2SessionsView(BaseActivityPageView):
+    template_name = "activity/tier2_sessions.html"
+    page_title = "Tier 2 Sessions"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        sessions = ApprovalSession.objects.filter(kind=ApprovalSession.Kind.TIER2).select_related("payment_intent")[:100]
+        context["sessions"] = sessions
+        return context
+
+
+class ActivityCounterpartiesView(BaseActivityPageView):
+    template_name = "activity/counterparties.html"
+    page_title = "Counterparties"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        counterparties = Counterparty.objects.order_by("name")
+        paginator = Paginator(counterparties, 50)
+        page_obj = paginator.get_page(1)
+        context["counterparties"] = page_obj
+        return context
+
+
+class ActivityRulesThresholdsView(BaseActivityPageView):
+    template_name = "activity/rules_thresholds.html"
+    page_title = "Rules and Thresholds"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["thresholds"] = {
+            "tier0_max": settings.VOUCH_TIER0_MAX_AMOUNT_GBP,
+            "tier1_max": settings.VOUCH_TIER1_MAX_AMOUNT_GBP,
+            "hard_block_unknown_over": settings.VOUCH_HARD_BLOCK_UNKNOWN_OVER_GBP,
+            "always_tier2_over": settings.VOUCH_ALWAYS_TIER2_OVER_GBP,
+        }
+        context["config_events"] = PolicyConfigEvent.objects.select_related("changed_by").order_by("-created_at")[:50]
+        return context
+
+
+class ActivityReceiptsReversalsView(BaseActivityPageView):
+    template_name = "activity/receipts_reversals.html"
+    page_title = "Receipts and Reversals"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["receipts"] = Receipt.objects.select_related("payment_intent", "ledger_entry").order_by("-id")[:100]
+        return context
+
+
+class ActivitySimulatorView(BaseActivityPageView):
+    template_name = "activity/simulator.html"
+    page_title = "Simulator"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["presets"] = PRESET_SCENARIOS
+        context["simulated"] = (
+            PaymentIntent.objects.filter(scenario_source="simulator")
+            .select_related("counterparty")
+            .order_by("-created_at")[:100]
+        )
+        return context
+
+
+class ActivitySimulationSettingsView(BaseActivityPageView):
+    template_name = "activity/simulation_settings.html"
+    page_title = "Simulation Settings"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["presets"] = PRESET_SCENARIOS
+        context["default_batch_size"] = 5
+        return context
+
+
+class ActivityDashboardView(ActivityOverviewView):
+    template_name = "activity/overview.html"
+
+
+class ActivityProfileView(BaseActivityPageView):
+    template_name = "activity/profile.html"
+    page_title = "Profile"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["user_email"] = self.request.user.email
+        context["user_name"] = self.request.user.get_full_name() or self.request.user.email
+        return context
+
+
+@login_required
+@require_GET
+def transactions_api(request: HttpRequest) -> JsonResponse:
+    limit = int(request.GET.get("limit", settings.VOUCH_PLAID_TRANSACTION_PAGE_SIZE))
+    offset = int(request.GET.get("offset", 0))
+    source_mode = getattr(settings, "VOUCH_ACTIVITY_TRANSACTIONS_SOURCE", "internal")
+    if source_mode == "plaid":
+        txns, total = fetch_transactions(limit=limit, offset=offset)
+    else:
+        intents = PaymentIntent.objects.select_related("counterparty").order_by("-created_at")[offset : offset + limit]
+        txns = [_intent_to_transaction(intent) for intent in intents]
+        total = PaymentIntent.objects.count()
+    return JsonResponse({"total": total, "items": txns})
+
+
+@login_required
+@require_GET
+def overview_stats_api(request: HttpRequest) -> JsonResponse:
+    return JsonResponse(
+        {
+            "tier0_executed": PaymentIntent.objects.filter(tier=PaymentIntent.Tier.TIER0).count(),
+            "tier1_pending": PaymentIntent.objects.filter(
+                tier=PaymentIntent.Tier.TIER1, status=PaymentIntent.Status.PENDING
+            ).count(),
+            "tier2_pending": PaymentIntent.objects.filter(
+                tier=PaymentIntent.Tier.TIER2, status=PaymentIntent.Status.PENDING
+            ).count(),
+            "receipts_count": Receipt.objects.count(),
+        }
+    )
+
+
+@login_required
+@require_GET
+def tier2_sessions_api(request: HttpRequest) -> JsonResponse:
+    sessions = ApprovalSession.objects.filter(kind=ApprovalSession.Kind.TIER2).select_related("payment_intent")[:100]
+    data = [
+        {
+            "id": s.id,
+            "payment_intent_id": s.payment_intent_id,
+            "status": s.status,
+            "required_approvers": s.required_approvers,
+            "expires_at": s.expires_at.isoformat(),
+            "attestation_count": s.attestations.count(),
+        }
+        for s in sessions
+    ]
+    return JsonResponse({"items": data})
+
+
+@login_required
+@require_GET
+def counterparties_api(request: HttpRequest) -> JsonResponse:
+    data = [
+        {
+            "id": c.id,
+            "name": c.name,
+            "is_known": c.is_known,
+            "specter_quality_score": c.specter_quality_score,
+            "domain": c.domain,
+        }
+        for c in Counterparty.objects.order_by("name")[:200]
+    ]
+    return JsonResponse({"items": data})
+
+
+@login_required
+@require_GET
+def receipts_api(request: HttpRequest) -> JsonResponse:
+    data = [
+        {
+            "id": r.id,
+            "payment_intent_id": r.payment_intent_id,
+            "can_reverse_until": r.can_reverse_until.isoformat(),
+            "reversed_at": r.reversed_at.isoformat() if r.reversed_at else None,
+        }
+        for r in Receipt.objects.select_related("payment_intent").order_by("-id")[:200]
+    ]
+    return JsonResponse({"items": data})
+
+
+@login_required
+@require_GET
+def rules_thresholds_api(request: HttpRequest) -> JsonResponse:
+    data = {
+        "tier0_max": settings.VOUCH_TIER0_MAX_AMOUNT_GBP,
+        "tier1_max": settings.VOUCH_TIER1_MAX_AMOUNT_GBP,
+        "hard_block_unknown_over": settings.VOUCH_HARD_BLOCK_UNKNOWN_OVER_GBP,
+        "always_tier2_over": settings.VOUCH_ALWAYS_TIER2_OVER_GBP,
+    }
+    return JsonResponse(data)
+
+
+@login_required
+@require_POST
+def rules_thresholds_update_api(request: HttpRequest) -> JsonResponse:
+    payload = json.loads(request.body or "{}")
+    tier0 = Decimal(str(payload.get("tier0_max", settings.VOUCH_TIER0_MAX_AMOUNT_GBP)))
+    tier1 = Decimal(str(payload.get("tier1_max", settings.VOUCH_TIER1_MAX_AMOUNT_GBP)))
+    hard = Decimal(str(payload.get("hard_block_unknown_over", settings.VOUCH_HARD_BLOCK_UNKNOWN_OVER_GBP)))
+    always2 = Decimal(str(payload.get("always_tier2_over", settings.VOUCH_ALWAYS_TIER2_OVER_GBP)))
+    if not (tier0 < tier1 < always2):
+        return JsonResponse({"error": "Threshold order must satisfy tier0 < tier1 < always_tier2"}, status=400)
+    if hard > always2:
+        return JsonResponse({"error": "Hard block threshold cannot exceed always_tier2 threshold"}, status=400)
+
+    old_values = {
+        "tier0_max": settings.VOUCH_TIER0_MAX_AMOUNT_GBP,
+        "tier1_max": settings.VOUCH_TIER1_MAX_AMOUNT_GBP,
+        "hard_block_unknown_over": settings.VOUCH_HARD_BLOCK_UNKNOWN_OVER_GBP,
+        "always_tier2_over": settings.VOUCH_ALWAYS_TIER2_OVER_GBP,
+    }
+    new_values = {
+        "tier0_max": str(tier0),
+        "tier1_max": str(tier1),
+        "hard_block_unknown_over": str(hard),
+        "always_tier2_over": str(always2),
+    }
+    for key, value in new_values.items():
+        PolicyConfigEvent.objects.create(
+            key=key,
+            old_value=str(old_values.get(key, "")),
+            new_value=value,
+            changed_by=request.user,
+            signature=f"local-{request.user.id}-{uuid.uuid4().hex[:8]}",
+        )
+    return JsonResponse({"ok": True, "new_values": new_values})
+
+
+@login_required
+@require_POST
+def simulator_run_api(request: HttpRequest) -> JsonResponse:
+    payload = json.loads(request.body or "{}")
+    preset = payload.get("preset", "")
+    try:
+        intent = create_scenario_intent(preset=preset, actor_id=request.user.id)
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    return JsonResponse({"id": intent.id, "external_id": intent.external_id, "tier": intent.tier}, status=201)
+
+
+@login_required
+@require_POST
+def simulator_batch_run_api(request: HttpRequest) -> JsonResponse:
+    payload = json.loads(request.body or "{}")
+    counts = payload.get("counts", {})
+    created = []
+    for preset, count in counts.items():
+        if preset not in PRESET_SCENARIOS:
+            return JsonResponse({"error": f"Unknown preset '{preset}'"}, status=400)
+        qty = max(0, min(int(count), 100))
+        for _ in range(qty):
+            intent = create_scenario_intent(preset=preset, actor_id=request.user.id)
+            created.append({"id": intent.id, "tier": intent.tier, "preset": preset})
+    return JsonResponse({"created_count": len(created), "items": created}, status=201)
+
+
+@login_required
+@require_POST
+def simulator_dynamic_generate_api(request: HttpRequest) -> JsonResponse:
+    payload = json.loads(request.body or "{}")
+    try:
+        count = int(payload.get("count", 25))
+        min_amount = Decimal(str(payload.get("min_amount", "20")))
+        max_amount = Decimal(str(payload.get("max_amount", "50000")))
+        require_all_tiers = bool(payload.get("require_all_tiers", True))
+    except Exception:
+        return JsonResponse({"error": "Invalid payload values for dynamic simulation"}, status=400)
+
+    count = max(1, min(count, 1000))
+    try:
+        intents = create_dynamic_transactions(
+            count=count,
+            min_amount=min_amount,
+            max_amount=max_amount,
+            actor_id=request.user.id,
+            require_all_tiers=require_all_tiers,
+        )
+    except ValueError as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+
+    tiers = {"tier0": 0, "tier1": 0, "tier2": 0}
+    for intent in intents:
+        tiers[intent.tier] = tiers.get(intent.tier, 0) + 1
+    return JsonResponse(
+        {
+            "created_count": len(intents),
+            "tiers": tiers,
+            "run_id": intents[0].scenario_run_id if intents else "",
+        },
+        status=201,
+    )
+
+
+@login_required
+@require_GET
+def simulator_presets_api(request: HttpRequest) -> JsonResponse:
+    return JsonResponse({"presets": PRESET_SCENARIOS})
 
 
 @login_required
@@ -62,8 +427,16 @@ def transaction_detail_partial(request: HttpRequest, transaction_id: str = "") -
     rendered_transactions = request.session.get("activity_dashboard_transactions", {})
     selected = rendered_transactions.get(str(transaction_id))
     if selected is None:
-        transactions, _ = fetch_transactions(limit=settings.VOUCH_PLAID_TRANSACTION_PAGE_SIZE)
-        selected = next((txn for txn in transactions if str(txn.get("transaction_id")) == transaction_id), None)
+        if str(transaction_id).startswith("intent-"):
+            try:
+                intent_id = int(str(transaction_id).replace("intent-", ""))
+                intent = PaymentIntent.objects.select_related("counterparty").get(id=intent_id)
+                selected = _intent_to_transaction(intent)
+            except (ValueError, PaymentIntent.DoesNotExist):
+                selected = None
+        else:
+            transactions, _ = fetch_transactions(limit=settings.VOUCH_PLAID_TRANSACTION_PAGE_SIZE)
+            selected = next((txn for txn in transactions if str(txn.get("transaction_id")) == transaction_id), None)
     return render(
         request,
         "activity/partials/transaction_detail.html",

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block page_title %}Tier 1 Review{% endblock page_title %}
+{% block content %}
+  <section class="px-4 py-8">
+    <h1 class="mb-4 text-2xl font-semibold">Tier 1 Review Queue</h1>
+    {% include "activity/_nav.html" %}
+    <div class="overflow-x-auto rounded border">
+      <table class="w-full text-sm">
+        <thead class="bg-muted"><tr><th class="p-2 text-left">ID</th><th class="p-2 text-left">Counterparty</th><th class="p-2 text-left">Amount</th><th class="p-2 text-left">Risk</th></tr></thead>
+        <tbody>
+          {% for item in queue %}
+            <tr class="border-t"><td class="p-2">{{ item.id }}</td><td class="p-2">{{ item.counterparty.name|default:"-" }}</td><td class="p-2">£{{ item.amount_gbp }}</td><td class="p-2">{{ item.risk_score }}</td></tr>
+          {% empty %}
+            <tr><td colspan="4" class="p-4 text-muted-foreground">No tier 1 approvals pending.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+{% endblock content %}
