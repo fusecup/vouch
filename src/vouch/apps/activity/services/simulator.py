@@ -50,15 +50,16 @@ def create_scenario_intent(preset: str, actor_id: int | None = None) -> PaymentI
         if preset == "coerced_tier2":
             session.kind = ApprovalSession.Kind.TIER2
             session.save(update_fields=["kind"])
-            ApprovalAttestation.objects.create(
-                session=session,
-                approver_id=actor_id if actor_id else 1,
-                decision=ApprovalAttestation.Decision.APPROVE,
-                face_passed=True,
-                voice_passed=True,
-                emotion_label="stressed",
-                coerced=True,
-            )
+            if actor_id:
+                ApprovalAttestation.objects.create(
+                    session=session,
+                    approver_id=actor_id,
+                    decision=ApprovalAttestation.Decision.APPROVE,
+                    face_passed=True,
+                    voice_passed=True,
+                    emotion_label="stressed",
+                    coerced=True,
+                )
         if preset == "swipe_overload":
             for i in range(3):
                 PaymentIntent.objects.create(
