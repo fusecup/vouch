@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MediaCapture, MediaCaptureHandle } from '@/components/MediaCapture';
 import { PulseDot } from '@/components/PulseDot';
 import { colors } from '@/tokens/colors';
 import { motion } from '@/tokens/motion';
@@ -25,12 +26,19 @@ export type IslandState =
 interface DynamicIslandBannerProps {
   state: IslandState;
   onPress?: () => void;
+  captureRef?: React.RefObject<MediaCaptureHandle>;
+  onCaptureError?: (msg: string) => void;
 }
 
 const ISLAND_COMPACT_HEIGHT = 38;
 const ISLAND_EXPANDED_PAD = 18;
 
-export function DynamicIslandBanner({ state, onPress }: DynamicIslandBannerProps) {
+export function DynamicIslandBanner({
+  state,
+  onPress,
+  captureRef,
+  onCaptureError,
+}: DynamicIslandBannerProps) {
   const insets = useSafeAreaInsets();
   const expansion = useSharedValue(state.kind === 'compact' ? 0 : 1);
 
@@ -49,7 +57,9 @@ export function DynamicIslandBanner({ state, onPress }: DynamicIslandBannerProps
         <Animated.View style={[styles.island, containerStyle]}>
           {state.kind === 'compact' && <Compact state={state} />}
           {state.kind === 'expanded' && <Expanded state={state} />}
-          {state.kind === 'recording' && <Recording state={state} />}
+          {state.kind === 'recording' && (
+            <Recording state={state} captureRef={captureRef} onCaptureError={onCaptureError} />
+          )}
           {state.kind === 'vouched' && <Vouched state={state} />}
           {state.kind === 'coerced' && <Coerced state={state} />}
         </Animated.View>
@@ -88,16 +98,35 @@ function Expanded({ state }: { state: Extract<IslandState, { kind: 'expanded' }>
   );
 }
 
-function Recording({ state }: { state: Extract<IslandState, { kind: 'recording' }> }) {
+function Recording({
+  state,
+  captureRef,
+  onCaptureError,
+}: {
+  state: Extract<IslandState, { kind: 'recording' }>;
+  captureRef?: React.RefObject<MediaCaptureHandle>;
+  onCaptureError?: (msg: string) => void;
+}) {
   const progress = Math.min(1, state.elapsedMs / state.totalMs);
   const seconds = (state.elapsedMs / 1000).toFixed(1);
   const total = (state.totalMs / 1000).toFixed(0);
   return (
-    <View style={styles.expandedBlock}>
+    <View style={styles.recordIslandBlock}>
       <View style={styles.expandedHeaderRow}>
         <PulseDot size={7} />
-        <Text style={[styles.islandTitle, { marginLeft: 10 }]}>REC {seconds}s / {total}s</Text>
+        <Text style={[styles.islandTitle, { marginLeft: 10 }]}>
+          REC {seconds}s / {total}s
+        </Text>
       </View>
+
+      <View style={styles.cameraSlot}>
+        {captureRef ? (
+          <MediaCapture ref={captureRef} onError={onCaptureError} />
+        ) : (
+          <View style={styles.cameraPlaceholder} />
+        )}
+      </View>
+
       <Waveform />
       <Text style={styles.phraseTeleprompter}>&ldquo;{state.phrase}&rdquo;</Text>
       <View style={styles.progressTrack}>
@@ -174,8 +203,8 @@ const styles = StyleSheet.create({
   island: {
     minHeight: ISLAND_COMPACT_HEIGHT,
     minWidth: 130,
-    maxWidth: 360,
-    borderRadius: 24,
+    maxWidth: 380,
+    borderRadius: 28,
     backgroundColor: '#000',
     borderWidth: 1,
     borderColor: '#1F1208',
@@ -183,8 +212,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     shadowColor: '#000',
     shadowOpacity: 0.85,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    overflow: 'hidden',
   },
   compactRow: {
     flexDirection: 'row',
@@ -203,6 +233,23 @@ const styles = StyleSheet.create({
     minWidth: 280,
     paddingHorizontal: ISLAND_EXPANDED_PAD,
     paddingVertical: 8,
+  },
+  recordIslandBlock: {
+    width: 280,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 10,
+  },
+  cameraSlot: {
+    width: '100%',
+    aspectRatio: 0.78,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: '#0A0604',
+  },
+  cameraPlaceholder: {
+    flex: 1,
+    backgroundColor: '#0A0604',
   },
   expandedHeaderRow: {
     flexDirection: 'row',

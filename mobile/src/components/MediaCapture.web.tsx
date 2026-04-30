@@ -34,19 +34,53 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>(
         setError(null);
         try {
           if (!navigator.mediaDevices?.getUserMedia) {
-            throw new Error('mediaDevices.getUserMedia unavailable in this browser');
+            throw new Error('getUserMedia unavailable — needs https or localhost');
           }
-          const stream = await navigator.mediaDevices.getUserMedia({
+
+          // Request video first so we always have a preview, then audio so
+          // the user sees two distinct prompts and we can detect mic-denial
+          // separately from camera-denial.
+          const videoStream = await navigator.mediaDevices.getUserMedia({
             video: { width: { ideal: 720 }, height: { ideal: 960 }, facingMode: 'user' },
-            audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000 },
+            audio: false,
           });
-          streamRef.current = stream;
+
+          let audioStream: MediaStream | null = null;
+          try {
+            audioStream = await navigator.mediaDevices.getUserMedia({
+              audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 48000 },
+              video: false,
+            });
+          } catch (audioErr) {
+            videoStream.getTracks().forEach((t) => t.stop());
+            const name = (audioErr as { name?: string })?.name ?? '';
+            const reason =
+              name === 'NotAllowedError'
+                ? 'microphone permission denied'
+                : name === 'NotFoundError'
+                  ? 'no microphone found'
+                  : 'microphone unavailable';
+            throw new Error(reason);
+          }
+
+          // Combine into one stream so the preview shows the camera and we
+          // record audio off the dedicated audio stream.
+          const combined = new MediaStream([
+            ...videoStream.getVideoTracks(),
+            ...audioStream.getAudioTracks(),
+          ]);
+          streamRef.current = combined;
+
           if (videoRef.current) {
-            videoRef.current.srcObject = stream;
+            videoRef.current.srcObject = combined;
             await videoRef.current.play().catch(() => {});
           }
 
-          const audioStream = new MediaStream(stream.getAudioTracks());
+          const audioOnly = new MediaStream(audioStream.getAudioTracks());
+          if (audioOnly.getAudioTracks().length === 0) {
+            throw new Error('no audio track captured');
+          }
+
           const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
             ? 'audio/webm;codecs=opus'
             : MediaRecorder.isTypeSupported('audio/webm')
@@ -54,20 +88,34 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>(
               : MediaRecorder.isTypeSupported('audio/mp4')
                 ? 'audio/mp4'
                 : '';
-          const recorder = mime ? new MediaRecorder(audioStream, { mimeType: mime }) : new MediaRecorder(audioStream);
+          const recorder = mime
+            ? new MediaRecorder(audioOnly, { mimeType: mime })
+            : new MediaRecorder(audioOnly);
           chunksRef.current = [];
           recorder.ondataavailable = (e) => {
             if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+          };
+          recorder.onerror = (e) => {
+            const msg = (e as unknown as { error?: { message?: string } }).error?.message ?? 'recorder error';
+            setError(msg);
+            onError?.(msg);
           };
           recorder.start(250);
           recorderRef.current = recorder;
           setActive(true);
         } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
+          const name = (e as { name?: string })?.name ?? '';
+          const baseMsg = e instanceof Error ? e.message : String(e);
+          const msg =
+            name === 'NotAllowedError'
+              ? 'camera/microphone permission denied'
+              : name === 'NotFoundError'
+                ? 'no camera or microphone found'
+                : baseMsg;
           setError(msg);
           onError?.(msg);
           cleanup();
-          throw e;
+          throw new Error(msg);
         }
       },
 
@@ -108,12 +156,8 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>(
       <div
         style={{
           width: '100%',
-          aspectRatio: '0.72',
-          borderRadius: 14,
+          height: '100%',
           backgroundColor: '#0A0604',
-          borderWidth: 1,
-          borderStyle: 'solid',
-          borderColor: colors.cardStroke,
           overflow: 'hidden',
           position: 'relative',
           display: 'flex',

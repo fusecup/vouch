@@ -194,7 +194,11 @@ export default function VouchScreen() {
 
   return (
     <BloomGradient>
-      <DynamicIslandBanner state={islandState} />
+      <DynamicIslandBanner
+        state={islandState}
+        captureRef={captureRef as React.RefObject<MediaCaptureHandle>}
+        onCaptureError={(msg) => setBiometricError(msg)}
+      />
 
       <View style={[styles.header, { paddingTop: insets.top + 64 }]}>
         <View style={styles.headerLeftBlock}>
@@ -212,11 +216,7 @@ export default function VouchScreen() {
         )}
         {stage === 'faceid' && <FaceIdGate />}
         {(stage === 'recording' || stage === 'classifying') && (
-          <RecordingFrame
-            phrase={challengePhrase}
-            captureRef={captureRef}
-            classifying={stage === 'classifying'}
-          />
+          <RecordingFrame phrase={challengePhrase} classifying={stage === 'classifying'} />
         )}
         {stage === 'result' && (
           <ResultFrame
@@ -291,20 +291,18 @@ function FaceIdGate() {
 
 function RecordingFrame({
   phrase,
-  captureRef,
   classifying,
 }: {
   phrase: string;
-  captureRef: React.RefObject<MediaCaptureHandle | null>;
   classifying: boolean;
 }) {
   return (
     <View style={styles.recordingFrame}>
-      <View style={styles.cameraStub}>
-        <MediaCapture ref={captureRef as React.Ref<MediaCaptureHandle>} />
-      </View>
+      <Text style={styles.recordingHint}>
+        {classifying ? 'analysing voice…' : 'eyes on the island ↑'}
+      </Text>
       <Text style={styles.teleprompter}>
-        {classifying ? 'analysing voice…' : `“${phrase}”`}
+        {classifying ? 'computing emotion features' : `“${phrase}”`}
       </Text>
     </View>
   );
@@ -487,6 +485,11 @@ const styles = StyleSheet.create({
     width: '78%',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  recordingHint: {
+    ...type.caption,
+    color: colors.accentAmber,
+    marginBottom: 4,
   },
   cameraStubLabel: {
     ...type.caption,
