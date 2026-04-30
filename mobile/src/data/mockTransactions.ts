@@ -162,6 +162,8 @@ export const pendingTransactions: Transaction[] = [
     brandColor: '#FF3B30',
     recurring: false,
     timeToClear: 'Holds until 2 vouches',
+    remoteVouchOutcome: 'rejected',
+    remoteVouchReason: 'unknown vendor — wants ops review before release',
   },
   {
     id: 'txn_008',

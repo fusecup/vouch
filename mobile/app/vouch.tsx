@@ -229,22 +229,41 @@ export default function VouchScreen() {
     setBiometricError(null);
   };
 
-  // Off-screen approver — auto-vouch after a short delay so the demo flows.
+  // Off-screen approver — synthesise their attestation after a short delay so
+  // the demo flows. Sarah's outcome is driven by the txn's
+  // `remoteVouchOutcome` field, so we can show one txn she declines.
   useEffect(() => {
     if (stage !== 'awaiting_remote') return;
     let cancelled = false;
     const timer = setTimeout(() => {
       if (cancelled) return;
+      const sarahApproved = (txn.remoteVouchOutcome ?? 'approved') === 'approved';
       const remoteRecording: ApproverRecording = {
         approverIndex,
         videoUrl: '',
-        vouched: true,
-        emotionLabel: 'remote vouch',
+        vouched: sarahApproved,
+        emotionLabel: sarahApproved ? 'remote vouch' : 'remote decline',
         emotionScore: 1,
         capturedAt: new Date(),
         durationSec: 0,
+        reason: sarahApproved ? undefined : txn.remoteVouchReason ?? 'declined',
       };
       setRecordings((prev) => [...prev, remoteRecording]);
+
+      if (!sarahApproved) {
+        setFlashMessage(
+          `${REMOTE_APPROVER.name.toUpperCase()} DECLINED · TRANSACTION BLOCKED`,
+        );
+        setStage('flashing');
+        // Stay on the screen — user has to manually exit. The txn does not
+        // execute and there is no auto-route to the next one.
+        setTimeout(() => {
+          setStage('completed');
+          setFlashMessage(null);
+        }, FLASH_DURATION_MS * 1.6);
+        return;
+      }
+
       setFlashMessage(`ALL ${approversRequired} VOUCHES IN — EXECUTING`);
       setStage('flashing');
       setTimeout(() => {

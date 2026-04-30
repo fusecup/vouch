@@ -29,6 +29,8 @@ export interface Transaction {
   brandColor?: string;
   recurring?: boolean;
   timeToClear?: string;
+  remoteVouchOutcome?: 'approved' | 'rejected';
+  remoteVouchReason?: string;
 }
 
 export interface BiometricResult {

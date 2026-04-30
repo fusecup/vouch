@@ -28,14 +28,23 @@ export function ApproverPlayback({ recording, remoteApprover }: ApproverPlayback
   const isRemote = !recording.videoUrl && !!remoteApprover;
 
   if (isRemote) {
+    const remoteAccent = recording.vouched ? '#3FA9FF' : colors.pulseRed;
+    const remoteHeader = recording.vouched
+      ? `APPROVER ${recording.approverIndex} · REMOTE VOUCH ✓`
+      : `APPROVER ${recording.approverIndex} · REMOTE DECLINE ▲`;
+    const remoteStatusLabel = recording.vouched ? 'VOUCHED' : 'DECLINED';
+    const remoteStatusColor = recording.vouched ? '#3FE07D' : colors.pulseRed;
+    const remoteFooter = recording.vouched
+      ? `attestation captured on ${remoteApprover.name}'s ${remoteApprover.device.toLowerCase()} · biometric + voice verified · receipt synced`
+      : `${remoteApprover.name} reviewed on ${remoteApprover.device.toLowerCase()} and rejected the attestation · transaction blocked`;
     return (
       <div
         style={{
-          backgroundColor: colors.cardFill,
+          backgroundColor: recording.vouched ? colors.cardFill : '#1A0000',
           borderRadius: 18,
           borderWidth: 1,
           borderStyle: 'solid',
-          borderColor: '#3FA9FF',
+          borderColor: remoteAccent,
           padding: 16,
           display: 'flex',
           flexDirection: 'column',
@@ -58,17 +67,17 @@ export function ApproverPlayback({ recording, remoteApprover }: ApproverPlayback
               fontFamily: 'Menlo, monospace',
               fontSize: 11,
               letterSpacing: 1.2,
-              color: '#3FA9FF',
+              color: remoteAccent,
               fontWeight: 700,
             }}
           >
-            APPROVER {recording.approverIndex} · REMOTE VOUCH ✓
+            {remoteHeader}
           </div>
           <div
             style={{
               fontFamily: 'Menlo, monospace',
               fontSize: 10,
-              color: colors.cardInkMuted,
+              color: recording.vouched ? colors.cardInkMuted : 'rgba(255,255,255,0.6)',
             }}
           >
             {recording.capturedAt.toLocaleTimeString([], {
@@ -92,7 +101,7 @@ export function ApproverPlayback({ recording, remoteApprover }: ApproverPlayback
               width: 44,
               height: 44,
               borderRadius: 22,
-              backgroundColor: '#3FA9FF',
+              backgroundColor: remoteAccent,
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
@@ -105,10 +114,21 @@ export function ApproverPlayback({ recording, remoteApprover }: ApproverPlayback
             {remoteApprover.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
           </div>
           <div style={{ flex: 1, fontFamily: 'Menlo, monospace' }}>
-            <div style={{ color: colors.cardInkPrimary, fontSize: 14, fontWeight: 600 }}>
+            <div
+              style={{
+                color: recording.vouched ? colors.cardInkPrimary : '#FFFFFF',
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
               {remoteApprover.name}
             </div>
-            <div style={{ color: colors.cardInkSecondary, fontSize: 11 }}>
+            <div
+              style={{
+                color: recording.vouched ? colors.cardInkSecondary : 'rgba(255,255,255,0.7)',
+                fontSize: 11,
+              }}
+            >
               {remoteApprover.role} · {remoteApprover.device}
             </div>
           </div>
@@ -116,26 +136,41 @@ export function ApproverPlayback({ recording, remoteApprover }: ApproverPlayback
             style={{
               fontFamily: 'Menlo, monospace',
               fontSize: 10,
-              color: colors.cardInkMuted,
+              color: recording.vouched ? colors.cardInkMuted : 'rgba(255,255,255,0.6)',
               textAlign: 'right',
             }}
           >
-            <div style={{ marginBottom: 2 }}>VOUCHED</div>
-            <div style={{ color: '#3FE07D', fontWeight: 700 }}>off-device</div>
+            <div style={{ marginBottom: 2 }}>{remoteStatusLabel}</div>
+            <div style={{ color: remoteStatusColor, fontWeight: 700 }}>off-device</div>
           </div>
         </div>
+
+        {recording.reason && (
+          <div
+            style={{
+              fontFamily: 'Menlo, monospace',
+              fontSize: 11,
+              color: '#FFFFFF',
+              backgroundColor: 'rgba(255,59,48,0.18)',
+              padding: '8px 10px',
+              borderRadius: 8,
+              borderLeft: `2px solid ${colors.pulseRed}`,
+            }}
+          >
+            ▲ {recording.reason}
+          </div>
+        )}
 
         <div
           style={{
             fontFamily: 'Menlo, monospace',
             fontSize: 10,
-            color: colors.cardInkMuted,
+            color: recording.vouched ? colors.cardInkMuted : 'rgba(255,255,255,0.6)',
             paddingTop: 8,
-            borderTop: `1px solid ${colors.cardStroke}`,
+            borderTop: `1px solid ${recording.vouched ? colors.cardStroke : 'rgba(255,59,48,0.3)'}`,
           }}
         >
-          attestation captured on {remoteApprover.name}'s {remoteApprover.device.toLowerCase()} ·
-          biometric + voice verified · receipt synced
+          {remoteFooter}
         </div>
       </div>
     );
