@@ -369,6 +369,10 @@ export default function VouchScreen() {
   const formatAmount = (amount: number) =>
     `£${amount.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
 
+  const lastRecording = recordings[recordings.length - 1];
+  const lastWasBlocked = !!lastRecording && !lastRecording.vouched;
+  const lastReason = lastRecording?.reason ?? lastRecording?.emotionLabel ?? 'declined';
+
   const islandState: IslandState =
     stage === 'expanded' || stage === 'faceid'
       ? {
@@ -395,14 +399,21 @@ export default function VouchScreen() {
               phrase: 'analysing emotion…',
             }
           : stage === 'flashing'
-            ? latestEmotion?.family === 'coerced' || duress
-              ? { kind: 'coerced', reason: latestEmotion?.label ?? 'coerced' }
+            ? lastWasBlocked || latestEmotion?.family === 'coerced' || duress
+              ? {
+                  kind: 'coerced',
+                  reason: lastWasBlocked
+                    ? lastReason
+                    : latestEmotion?.label ?? 'coerced',
+                }
               : { kind: 'vouched', emotion: latestEmotion?.label ?? 'neutral', cadence: 'ok' }
-            : {
-                kind: 'compact',
-                amount: formatAmount(txn.amount),
-                tier: txn.tier as 1 | 2 | 3,
-              };
+            : stage === 'completed' && lastWasBlocked
+              ? { kind: 'coerced', reason: lastReason }
+              : {
+                  kind: 'compact',
+                  amount: formatAmount(txn.amount),
+                  tier: txn.tier as 1 | 2 | 3,
+                };
 
   const lastVouchOk = recordings.length > 0 && recordings[recordings.length - 1].vouched;
   const blocked = recordings.some((r) => !r.vouched);
