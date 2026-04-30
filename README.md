@@ -2,7 +2,7 @@
 
 <h1>Vouch</h1>
 
-<p><strong>An agent that moves money. With a face on it.</strong></p>
+<p><strong>Small money moves itself. Big money looks you in the eye.</strong></p>
 
 <p>
   <a href="https://github.com/fusecup/vouch/actions/workflows/CI.yml"><img alt="Continuous Integration" src="https://github.com/fusecup/vouch/actions/workflows/CI.yml/badge.svg"></a>
