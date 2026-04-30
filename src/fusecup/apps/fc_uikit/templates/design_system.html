@@ -1,0 +1,2456 @@
+{% extends "base.html" %}
+{% block page_title %}
+    Design System
+{% endblock page_title %}
+{% block content %}
+    <div class="min-h-screen bg-background">
+        <!-- Header -->
+        <div class="bg-muted border-b border-border sticky top-0 z-10">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="py-4">
+                    <!-- Back Button Row -->
+                    <div class="mb-3 flex items-center justify-between">
+                        <c-uikit.button href="{% url 'welcome' %}" variant="outline">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                 fill="none"
+                                 viewBox="0 0 24 24"
+                                 stroke-width="1.5"
+                                 stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                            </svg>
+                            Back
+                        </c-uikit.button>
+                        <!-- Theme Toggle -->
+                        <c-theme_toggle>
+                        </c-theme_toggle>
+                    </div>
+                    <!-- Title and Subtitle Row -->
+                    <div class="mb-4">
+                        <h1 class="text-2xl font-bold text-card-foreground">Design System</h1>
+                        <p class="mt-1 text-sm text-muted-foreground">A comprehensive showcase of all Django Cotton UI components</p>
+                    </div>
+                    <!-- Navigation Row -->
+                    <nav class="flex flex-wrap gap-2"
+                         x-data="{ activeSection: 'accordion' }"
+                         id="design-system-nav">
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'accordion'; document.getElementById('accordion').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'accordion' }">
+                            Accordion
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'alert'; document.getElementById('alert').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'alert' }">
+                            Alert
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'alert-dialog'; document.getElementById('alert-dialog').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'alert-dialog' }">
+                            Alert Dialog
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'badges'; document.getElementById('badges').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'badges' }">
+                            Badges
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'buttons'; document.getElementById('buttons').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'buttons' }">
+                            Buttons
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'card'; document.getElementById('card').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'card' }">
+                            Card
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'checkbox'; document.getElementById('checkbox').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'checkbox' }">
+                            Checkbox
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'command'; document.getElementById('command').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'command' }">
+                            Command
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'command-dialog'; document.getElementById('command-dialog').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'command-dialog' }">
+                            Command Dialog
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'dialog'; document.getElementById('dialog').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'dialog' }">
+                            Dialog
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'dropdown'; document.getElementById('dropdown').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'dropdown' }">
+                            Dropdown Menu
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'forms'; document.getElementById('forms').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'forms' }">
+                            Forms
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'inputs'; document.getElementById('inputs').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'inputs' }">
+                            Inputs
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'label'; document.getElementById('label').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'label' }">
+                            Label
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'links'; document.getElementById('links').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'links' }">
+                            Links
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'navigation-menu'; document.getElementById('navigation-menu').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'navigation-menu' }">
+                            Navigation Menu
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'popover'; document.getElementById('popover').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'popover' }">
+                            Popover
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'progress'; document.getElementById('progress').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'progress' }">
+                            Progress
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'select'; document.getElementById('select').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'select' }">
+                            Select
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'separator'; document.getElementById('separator').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'separator' }">
+                            Separator
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'sheet'; document.getElementById('sheet').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'sheet' }">
+                            Sheet
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'table'; document.getElementById('table').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'table' }">
+                            Table
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'tabs'; document.getElementById('tabs').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'tabs' }">
+                            Tabs
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'textarea'; document.getElementById('textarea').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'textarea' }">
+                            Textarea
+                        </c-uikit.button>
+                        <c-uikit.button variant="outline" size="sm" @click="activeSection = 'toast'; document.getElementById('toast').scrollIntoView({ behavior: 'smooth', block: 'start' })" x-bind:class="{ 'bg-primary text-primary-foreground border-primary hover:bg-primary/90': activeSection === 'toast' }">
+                            Toast
+                        </c-uikit.button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+        <!-- Main Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Components Grid -->
+            <div class="space-y-12">
+                <!-- Accordion Section -->
+                <section id="accordion" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Accordion</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">
+                                A vertically stacked set of interactive headings that each reveal a section of content
+                            </p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Single Accordion Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Single Collapsible</h3>
+                                <div class="max-w-md p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.accordion type="single" collapsible="true">
+                                        <c-uikit.accordion.item value="item-1">
+                                            <c-uikit.accordion.trigger value="item-1">
+                                                Is it for Django?
+                                            </c-uikit.accordion.trigger>
+                                            <c-uikit.accordion.content value="item-1">
+                                                Yes. All components are compatible with Django.
+                                            </c-uikit.accordion.content>
+                                        </c-uikit.accordion.item>
+                                        <c-uikit.accordion.item value="item-2">
+                                            <c-uikit.accordion.trigger value="item-2">
+                                                Is it styled?
+                                            </c-uikit.accordion.trigger>
+                                            <c-uikit.accordion.content value="item-2">
+                                                Yes. It comes with default styles that match the other components in this library.
+                                            </c-uikit.accordion.content>
+                                        </c-uikit.accordion.item>
+                                        <c-uikit.accordion.item value="item-3">
+                                            <c-uikit.accordion.trigger value="item-3">
+                                                Is it animated?
+                                            </c-uikit.accordion.trigger>
+                                            <c-uikit.accordion.content value="item-3">
+                                                Yes. It's animated by default, but you can disable it if you prefer.
+                                            </c-uikit.accordion.content>
+                                        </c-uikit.accordion.item>
+                                    </c-uikit.accordion>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.accordion type="single" collapsible="true"&gt;
+  &lt;c-uikit.accordion.item value="item-1"&gt;
+    &lt;c-uikit.accordion.trigger value="item-1"&gt;Is it for Django?&lt;/c-uikit.accordion.trigger&gt;
+    &lt;c-uikit.accordion.content value="item-1"&gt;
+      Yes. All components are compatible with Django.
+    &lt;/c-uikit.accordion.content&gt;
+  &lt;/c-uikit.accordion.item&gt;
+  &lt;c-uikit.accordion.item value="item-2"&gt;
+    &lt;c-uikit.accordion.trigger value="item-2"&gt;Is it styled?&lt;/c-uikit.accordion.trigger&gt;
+    &lt;c-uikit.accordion.content value="item-2"&gt;
+      Yes. It comes with default styles.
+    &lt;/c-uikit.accordion.content&gt;
+  &lt;/c-uikit.accordion.item&gt;
+&lt;/c-uikit.accordion&gt;</code></pre>
+                                </div>
+                            </div>
+                            <!-- Multiple Accordion Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Multiple Open</h3>
+                                <div class="max-w-md p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.accordion type="multiple">
+                                        <c-uikit.accordion.item value="features-1">
+                                            <c-uikit.accordion.trigger value="features-1">
+                                                Features
+                                            </c-uikit.accordion.trigger>
+                                            <c-uikit.accordion.content value="features-1">
+                                                Built with Django Cotton, styled with TailwindCSS, and enhanced with Alpine.js.
+                                            </c-uikit.accordion.content>
+                                        </c-uikit.accordion.item>
+                                        <c-uikit.accordion.item value="features-2">
+                                            <c-uikit.accordion.trigger value="features-2">
+                                                Accessibility
+                                            </c-uikit.accordion.trigger>
+                                            <c-uikit.accordion.content value="features-2">
+                                                Follows WAI-ARIA design patterns with proper keyboard navigation.
+                                            </c-uikit.accordion.content>
+                                        </c-uikit.accordion.item>
+                                        <c-uikit.accordion.item value="features-3">
+                                            <c-uikit.accordion.trigger value="features-3">
+                                                Customizable
+                                            </c-uikit.accordion.trigger>
+                                            <c-uikit.accordion.content value="features-3">
+                                                Easily customize styles to match your design system.
+                                            </c-uikit.accordion.content>
+                                        </c-uikit.accordion.item>
+                                    </c-uikit.accordion>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.accordion type="multiple"&gt;
+  &lt;c-uikit.accordion.item value="item-1"&gt;
+    &lt;c-uikit.accordion.trigger value="item-1"&gt;Features&lt;/c-uikit.accordion.trigger&gt;
+    &lt;c-uikit.accordion.content value="item-1"&gt;
+      Built with Django Cotton, styled with TailwindCSS.
+    &lt;/c-uikit.accordion.content&gt;
+  &lt;/c-uikit.accordion.item&gt;
+&lt;/c-uikit.accordion&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Alert Section -->
+                <section id="alert" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Alert</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">Displays a callout for user attention</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Alert Variants -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Variants</h3>
+                                <div class="space-y-4 p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.alert>
+                                        <c-uikit.alert.title>
+                                            Heads up!
+                                        </c-uikit.alert.title>
+                                        <c-uikit.alert.description>
+                                            You can add components to your app using the cli.
+                                        </c-uikit.alert.description>
+                                    </c-uikit.alert>
+                                    <c-uikit.alert variant="destructive">
+                                        <c-uikit.alert.title>
+                                            Error
+                                        </c-uikit.alert.title>
+                                        <c-uikit.alert.description>
+                                            Your session has expired. Please login again.
+                                        </c-uikit.alert.description>
+                                    </c-uikit.alert>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.alert&gt;
+  &lt;c-uikit.alert.title&gt;Heads up!&lt;/c-uikit.alert.title&gt;
+  &lt;c-uikit.alert.description&gt;
+    You can add components to your app using the cli.
+  &lt;/c-uikit.alert.description&gt;
+&lt;/c-uikit.alert&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Alert Dialog Section -->
+                <section id="alert-dialog" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Alert Dialog</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">
+                                A modal dialog that interrupts the user with important content and expects a response
+                            </p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Alert Dialog Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                <div class="p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.alert-dialog>
+                                        <c-uikit.alert-dialog.trigger>
+                                            <c-uikit.button variant="outline">
+                                                Open Dialog
+                                            </c-uikit.button>
+                                        </c-uikit.alert-dialog.trigger>
+                                        <c-uikit.alert-dialog.content>
+                                            <c-uikit.alert-dialog.header>
+                                                <c-uikit.alert-dialog.title>
+                                                    Are you absolutely sure?
+                                                </c-uikit.alert-dialog.title>
+                                                <c-uikit.alert-dialog.description>
+                                                    This action cannot be undone. This will permanently delete your account
+                                                    and remove your data from our servers.
+                                                </c-uikit.alert-dialog.description>
+                                            </c-uikit.alert-dialog.header>
+                                            <c-uikit.alert-dialog.footer>
+                                                <c-uikit.alert-dialog.cancel>
+                                                    Cancel
+                                                </c-uikit.alert-dialog.cancel>
+                                                <c-uikit.alert-dialog.action>
+                                                    Continue
+                                                </c-uikit.alert-dialog.action>
+                                            </c-uikit.alert-dialog.footer>
+                                        </c-uikit.alert-dialog.content>
+                                    </c-uikit.alert-dialog>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.alert-dialog&gt;
+  &lt;c-uikit.alert-dialog.trigger&gt;
+    &lt;c-uikit.button variant="outline"&gt;
+      Open Dialog
+    &lt;/c-uikit.button&gt;
+  &lt;/c-uikit.alert-dialog.trigger&gt;
+  &lt;c-uikit.alert-dialog.content&gt;
+    &lt;c-uikit.alert-dialog.header&gt;
+      &lt;c-uikit.alert-dialog.title&gt;Are you absolutely sure?&lt;/c-uikit.alert-dialog.title&gt;
+      &lt;c-uikit.alert-dialog.description&gt;
+        This action cannot be undone. This will permanently delete your account
+        and remove your data from our servers.
+      &lt;/c-uikit.alert-dialog.description&gt;
+    &lt;/c-uikit.alert-dialog.header&gt;
+    &lt;c-uikit.alert-dialog.footer&gt;
+      &lt;c-uikit.alert-dialog.cancel&gt;Cancel&lt;/c-uikit.alert-dialog.cancel&gt;
+      &lt;c-uikit.alert-dialog.action&gt;Continue&lt;/c-uikit.alert-dialog.action&gt;
+    &lt;/c-uikit.alert-dialog.footer&gt;
+  &lt;/c-uikit.alert-dialog.content&gt;
+&lt;/c-uikit.alert-dialog&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Badges Section -->
+                <section id="badges" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Badges</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">Small status indicators and labels</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Badge Variants -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Variants</h3>
+                                <div class="flex flex-wrap gap-4 p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.badge>
+                                        Default
+                                    </c-uikit.badge>
+                                    <c-uikit.badge variant="secondary">
+                                        Secondary
+                                    </c-uikit.badge>
+                                    <c-uikit.badge variant="destructive">
+                                        Destructive
+                                    </c-uikit.badge>
+                                    <c-uikit.badge variant="outline">
+                                        Outline
+                                    </c-uikit.badge>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.badge&gt;Default&lt;/c-uikit.badge&gt;
+&lt;c-uikit.badge variant="secondary"&gt;Secondary&lt;/c-uikit.badge&gt;
+&lt;c-uikit.badge variant="destructive"&gt;Destructive&lt;/c-uikit.badge&gt;
+&lt;c-uikit.badge variant="outline"&gt;Outline&lt;/c-uikit.badge&gt;</code></pre>
+                                </div>
+                            </div>
+                            <!-- Badge Examples -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Usage Examples</h3>
+                                <div class="flex flex-wrap gap-4 p-6 bg-card rounded-lg border border-border">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm text-muted-foreground">Status:</span>
+                                        <c-uikit.badge>
+                                            Active
+                                        </c-uikit.badge>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm text-muted-foreground">Role:</span>
+                                        <c-uikit.badge variant="secondary">
+                                            Admin
+                                        </c-uikit.badge>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm text-muted-foreground">Priority:</span>
+                                        <c-uikit.badge variant="destructive">
+                                            High
+                                        </c-uikit.badge>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm text-muted-foreground">Count:</span>
+                                        <c-uikit.badge variant="outline">
+                                            12
+                                        </c-uikit.badge>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Buttons Section -->
+                <section id="buttons" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Buttons</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">Various button styles and sizes for different use cases</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Button Variants -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Variants</h3>
+                                <div class="flex flex-wrap gap-4 p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.button>
+                                        Default
+                                    </c-uikit.button>
+                                    <c-uikit.button variant="destructive">
+                                        Destructive
+                                    </c-uikit.button>
+                                    <c-uikit.button variant="outline">
+                                        Outline
+                                    </c-uikit.button>
+                                    <c-uikit.button variant="secondary">
+                                        Secondary
+                                    </c-uikit.button>
+                                    <c-uikit.button variant="ghost">
+                                        Ghost
+                                    </c-uikit.button>
+                                    <c-uikit.button variant="link">
+                                        Link
+                                    </c-uikit.button>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.button&gt;Default&lt;/c-uikit.button&gt;
+&lt;c-uikit.button variant="destructive"&gt;Destructive&lt;/c-uikit.button&gt;
+&lt;c-uikit.button variant="outline"&gt;Outline&lt;/c-uikit.button&gt;
+&lt;c-uikit.button variant="secondary"&gt;Secondary&lt;/c-uikit.button&gt;
+&lt;c-uikit.button variant="ghost"&gt;Ghost&lt;/c-uikit.button&gt;
+&lt;c-uikit.button variant="link"&gt;Link&lt;/c-uikit.button&gt;</code></pre>
+                                </div>
+                            </div>
+                            <!-- Button Sizes -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Sizes</h3>
+                                <div class="flex flex-wrap items-center gap-4 p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.button size="xs">
+                                        Extra Small
+                                    </c-uikit.button>
+                                    <c-uikit.button size="sm">
+                                        Small
+                                    </c-uikit.button>
+                                    <c-uikit.button size="default">
+                                        Default
+                                    </c-uikit.button>
+                                    <c-uikit.button size="lg">
+                                        Large
+                                    </c-uikit.button>
+                                    <c-uikit.button size="icon">
+                                        <svg xmlns="http://www.w3.org/2000/svg"
+                                             fill="none"
+                                             viewBox="0 0 24 24"
+                                             stroke-width="1.5"
+                                             stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
+                                    </c-uikit.button>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.button size="xs"&gt;Extra Small&lt;/c-uikit.button&gt;
+&lt;c-uikit.button size="sm"&gt;Small&lt;/c-uikit.button&gt;
+&lt;c-uikit.button size="default"&gt;Default&lt;/c-uikit.button&gt;
+&lt;c-uikit.button size="lg"&gt;Large&lt;/c-uikit.button&gt;
+&lt;c-uikit.button size="icon"&gt;&lt;svg&gt;&lt;/svg&gt;&lt;/c-uikit.button&gt;</code></pre>
+                                </div>
+                            </div>
+                            <!-- Button States -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">States</h3>
+                                <div class="flex flex-wrap gap-4 p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.button>
+                                        Normal
+                                    </c-uikit.button>
+                                    <c-uikit.button disabled>
+                                        Disabled
+                                    </c-uikit.button>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.button&gt;Normal&lt;/c-uikit.button&gt;
+&lt;c-uikit.button disabled&gt;Disabled&lt;/c-uikit.button&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Card Section -->
+                <section id="card" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Card</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">Displays a card with optional header, content, and footer</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Card Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                <div class="flex justify-center p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.card class="w-full max-w-sm">
+                                        <c-uikit.card.header>
+                                            <c-uikit.card.title>
+                                                Create project
+                                            </c-uikit.card.title>
+                                            <c-uikit.card.description>
+                                                Deploy your new project in one-click.
+                                            </c-uikit.card.description>
+                                        </c-uikit.card.header>
+                                        <c-uikit.card.content>
+                                            <c-uikit.form.field>
+                                                <c-uikit.form.label>
+                                                    Name
+                                                </c-uikit.form.label>
+                                                <c-uikit.input placeholder="Name of your project" />
+                                            </c-uikit.form.field>
+                                        </c-uikit.card.content>
+                                        <c-uikit.card.footer class="flex justify-between">
+                                            <c-uikit.button variant="outline">
+                                                Cancel
+                                            </c-uikit.button>
+                                            <c-uikit.button>
+                                                Deploy
+                                            </c-uikit.button>
+                                        </c-uikit.card.footer>
+                                    </c-uikit.card>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.card class="w-full max-w-sm"&gt;
+  &lt;c-uikit.card.header&gt;
+    &lt;c-uikit.card.title&gt;Create project&lt;/c-uikit.card.title&gt;
+    &lt;c-uikit.card.description&gt;Deploy your new project in one-click.&lt;/c-uikit.card.description&gt;
+  &lt;/c-uikit.card.header&gt;
+  &lt;c-uikit.card.content&gt;
+    &lt;c-uikit.form.field&gt;
+      &lt;c-uikit.form.label&gt;Name&lt;/c-uikit.form.label&gt;
+      &lt;c-uikit.input placeholder="Name of your project" /&gt;
+    &lt;/c-uikit.form.field&gt;
+  &lt;/c-uikit.card.content&gt;
+  &lt;c-uikit.card.footer class="flex justify-between"&gt;
+    &lt;c-uikit.button variant="outline"&gt;Cancel&lt;/c-uikit.button&gt;
+    &lt;c-uikit.button&gt;Deploy&lt;/c-uikit.button&gt;
+  &lt;/c-uikit.card.footer&gt;
+&lt;/c-uikit.card&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Checkbox Section -->
+                <section id="checkbox" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Checkbox</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">
+                                A control that allows the user to toggle between checked and not checked
+                            </p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Checkbox Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Examples</h3>
+                                <div class="space-y-4 p-6 bg-card rounded-lg border border-border">
+                                    <div class="flex items-center gap-2">
+                                        <c-uikit.checkbox id="terms" />
+                                        <c-uikit.label for="terms">
+                                            Accept terms and conditions
+                                        </c-uikit.label>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <c-uikit.checkbox id="marketing" checked />
+                                        <c-uikit.label for="marketing">
+                                            Receive marketing emails
+                                        </c-uikit.label>
+                                    </div>
+                                    <div class="flex items-start space-x-2">
+                                        <c-uikit.checkbox id="terms-detailed" />
+                                        <div class="grid gap-1.5 leading-none">
+                                            <c-uikit.label for="terms-detailed" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                                Accept terms and conditions
+                                            </c-uikit.label>
+                                            <p class="text-sm text-muted-foreground">You agree to our Terms of Service and Privacy Policy.</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <c-uikit.checkbox id="disabled" disabled />
+                                        <c-uikit.label for="disabled">
+                                            Disabled checkbox
+                                        </c-uikit.label>
+                                    </div>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;!-- Basic checkbox with label --&gt;
+&lt;div class="flex items-center gap-2"&gt;
+  &lt;c-uikit.checkbox id="terms" /&gt;
+  &lt;c-uikit.label for="terms"&gt;Accept terms and conditions&lt;/c-uikit.label&gt;
+&lt;/div&gt;
+
+&lt;!-- Checked checkbox --&gt;
+&lt;div class="flex items-center gap-2"&gt;
+  &lt;c-uikit.checkbox id="marketing" checked /&gt;
+  &lt;c-uikit.label for="marketing"&gt;Receive marketing emails&lt;/c-uikit.label&gt;
+&lt;/div&gt;
+
+&lt;!-- Checkbox with label and description --&gt;
+&lt;div class="flex items-start space-x-2"&gt;
+  &lt;c-uikit.checkbox id="terms-detailed" /&gt;
+  &lt;div class="grid gap-1.5 leading-none"&gt;
+    &lt;c-uikit.label for="terms-detailed" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"&gt;
+      Accept terms and conditions
+    &lt;/c-uikit.label&gt;
+    &lt;p class="text-sm text-muted-foreground"&gt;
+      You agree to our Terms of Service and Privacy Policy.
+    &lt;/p&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;!-- Disabled checkbox --&gt;
+&lt;div class="flex items-center gap-2"&gt;
+  &lt;c-uikit.checkbox id="disabled" disabled /&gt;
+  &lt;c-uikit.label for="disabled"&gt;Disabled checkbox&lt;/c-uikit.label&gt;
+&lt;/div&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Command Section -->
+                <section id="command" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Command Palette</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">Command palette components for search and navigation</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Command Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Command Palette Structure</h3>
+                                <div class="p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.command class="rounded-lg border shadow-md md:min-w-[450px]">
+                                        <c-uikit.command.input placeholder="Type a command or search..." />
+                                        <c-uikit.command.list>
+                                            <c-uikit.command.empty>
+                                                No results found.
+                                            </c-uikit.command.empty>
+                                            <c-uikit.command.group heading="Suggestions">
+                                                <c-uikit.command.item value="calendar">
+                                                    Calendar
+                                                </c-uikit.command.item>
+                                                <c-uikit.command.item value="search-emoji">
+                                                    Search Emoji
+                                                </c-uikit.command.item>
+                                                <c-uikit.command.item value="calculator">
+                                                    Calculator
+                                                </c-uikit.command.item>
+                                            </c-uikit.command.group>
+                                            <c-uikit.command.separator />
+                                            <c-uikit.command.group heading="Settings">
+                                                <c-uikit.command.item value="profile">
+                                                    Profile
+                                                    <c-uikit.command.shortcut>
+                                                        ⌘P
+                                                    </c-uikit.command.shortcut>
+                                                </c-uikit.command.item>
+                                                <c-uikit.command.item value="billing">
+                                                    Billing
+                                                    <c-uikit.command.shortcut>
+                                                        ⌘B
+                                                    </c-uikit.command.shortcut>
+                                                </c-uikit.command.item>
+                                                <c-uikit.command.item value="settings">
+                                                    Settings
+                                                    <c-uikit.command.shortcut>
+                                                        ⌘S
+                                                    </c-uikit.command.shortcut>
+                                                </c-uikit.command.item>
+                                            </c-uikit.command.group>
+                                        </c-uikit.command.list>
+                                    </c-uikit.command>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.command class="rounded-lg border shadow-md md:min-w-[450px]"&gt;
+  &lt;c-uikit.command.input placeholder="Type a command or search..." /&gt;
+  &lt;c-uikit.command.list&gt;
+    &lt;c-uikit.command.empty&gt;No results found.&lt;/c-uikit.command.empty&gt;
+    &lt;c-uikit.command.group heading="Suggestions"&gt;
+      &lt;c-uikit.command.item value="calendar"&gt;Calendar&lt;/c-uikit.command.item&gt;
+      &lt;c-uikit.command.item value="search-emoji"&gt;Search Emoji&lt;/c-uikit.command.item&gt;
+      &lt;c-uikit.command.item value="calculator"&gt;Calculator&lt;/c-uikit.command.item&gt;
+    &lt;/c-uikit.command.group&gt;
+    &lt;c-uikit.command.separator /&gt;
+    &lt;c-uikit.command.group heading="Settings"&gt;
+      &lt;c-uikit.command.item value="profile"&gt;
+        Profile
+        &lt;c-uikit.command.shortcut&gt;⌘P&lt;/c-uikit.command.shortcut&gt;
+      &lt;/c-uikit.command.item&gt;
+      &lt;c-uikit.command.item value="billing"&gt;
+        Billing
+        &lt;c-uikit.command.shortcut&gt;⌘B&lt;/c-uikit.command.shortcut&gt;
+      &lt;/c-uikit.command.item&gt;
+      &lt;c-uikit.command.item value="settings"&gt;
+        Settings
+        &lt;c-uikit.command.shortcut&gt;⌘S&lt;/c-uikit.command.shortcut&gt;
+      &lt;/c-uikit.command.item&gt;
+    &lt;/c-uikit.command.group&gt;
+  &lt;/c-uikit.command.list&gt;
+&lt;/c-uikit.command&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Command Dialog Section -->
+                <section id="command-dialog" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Command Dialog</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">Command palette in a dialog overlay</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Command Dialog Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Command Dialog with Keyboard Shortcut</h3>
+                                <div class="p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.command-dialog shortcut_key="k">
+                                        <c-slot name="trigger_slot">
+                                            <p class="text-sm text-muted-foreground">
+                                                Press
+                                                <kbd class="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+                                                    <span class="text-xs">⌘</span>K
+                                                </kbd>
+                                            </p>
+                                        </c-slot>
+                                        <c-uikit.command.input placeholder="Type a command or search..." />
+                                        <c-uikit.command.list>
+                                            <c-uikit.command.empty>
+                                                No results found.
+                                            </c-uikit.command.empty>
+                                            <c-uikit.command.group heading="Suggestions">
+                                                <c-uikit.command.item value="calendar">
+                                                    Calendar
+                                                </c-uikit.command.item>
+                                                <c-uikit.command.item value="search-emoji">
+                                                    Search Emoji
+                                                </c-uikit.command.item>
+                                                <c-uikit.command.item value="calculator">
+                                                    Calculator
+                                                </c-uikit.command.item>
+                                            </c-uikit.command.group>
+                                        </c-uikit.command.list>
+                                    </c-uikit.command-dialog>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.command-dialog shortcut_key="k"&gt;
+  &lt;c-slot name="trigger_slot"&gt;
+    &lt;p class="text-sm text-muted-foreground"&gt;
+      Press
+      &lt;kbd class="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100"&gt;
+        &lt;span class="text-xs"&gt;⌘&lt;/span&gt;K
+      &lt;/kbd&gt;
+    &lt;/p&gt;
+  &lt;/c-slot&gt;
+  &lt;c-uikit.command.input placeholder="Type a command or search..." /&gt;
+  &lt;c-uikit.command.list&gt;
+    &lt;c-uikit.command.empty&gt;No results found.&lt;/c-uikit.command.empty&gt;
+    &lt;c-uikit.command.group heading="Suggestions"&gt;
+      &lt;c-uikit.command.item value="calendar"&gt;Calendar&lt;/c-uikit.command.item&gt;
+      &lt;c-uikit.command.item value="search-emoji"&gt;Search Emoji&lt;/c-uikit.command.item&gt;
+      &lt;c-uikit.command.item value="calculator"&gt;Calculator&lt;/c-uikit.command.item&gt;
+    &lt;/c-uikit.command.group&gt;
+  &lt;/c-uikit.command.list&gt;
+&lt;/c-uikit.command-dialog&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Dialog Section -->
+                <section id="dialog" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Dialog</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">
+                                A window overlaid on either the primary window or another dialog window
+                            </p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Dialog Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                <div class="p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.dialog>
+                                        <c-uikit.dialog.trigger>
+                                            Open Dialog
+                                        </c-uikit.dialog.trigger>
+                                        <c-uikit.dialog.content>
+                                            <c-uikit.dialog.header>
+                                                <c-uikit.dialog.title>
+                                                    Are you absolutely sure?
+                                                </c-uikit.dialog.title>
+                                                <c-uikit.dialog.description>
+                                                    This action is permanent and cannot be undone.
+                                                </c-uikit.dialog.description>
+                                            </c-uikit.dialog.header>
+                                            <div class="flex justify-end gap-2 pt-4">
+                                                <c-uikit.button variant="outline" @click="hideDialog">
+                                                    Cancel
+                                                </c-uikit.button>
+                                                <c-uikit.button variant="default">
+                                                    Submit
+                                                </c-uikit.button>
+                                            </div>
+                                        </c-uikit.dialog.content>
+                                    </c-uikit.dialog>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.dialog&gt;
+  &lt;c-uikit.dialog.trigger&gt;Open Dialog&lt;/c-uikit.dialog.trigger&gt;
+  &lt;c-uikit.dialog.content&gt;
+    &lt;c-uikit.dialog.header&gt;
+      &lt;c-uikit.dialog.title&gt;Are you absolutely sure?&lt;/c-uikit.dialog.title&gt;
+      &lt;c-uikit.dialog.description&gt;
+        This action is permanent and cannot be undone.
+      &lt;/c-uikit.dialog.description&gt;
+    &lt;/c-uikit.dialog.header&gt;
+    &lt;div class="flex justify-end gap-2 pt-4"&gt;
+      &lt;c-uikit.button variant="outline" @click="hideDialog"&gt;Cancel&lt;/c-uikit.button&gt;
+      &lt;c-uikit.button variant="default"&gt;Submit&lt;/c-uikit.button&gt;
+    &lt;/div&gt;
+  &lt;/c-uikit.dialog.content&gt;
+&lt;/c-uikit.dialog&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Dropdown Menu Section -->
+                <section id="dropdown" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Dropdown Menu</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">Displays a menu to the user with a list of actions or links</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Dropdown Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                <div class="p-6 bg-card rounded-lg border border-border">
+                                    <c-uikit.dropdown_menu>
+                                        <c-uikit.dropdown_menu.trigger>
+                                            <c-uikit.button variant="outline">
+                                                Open
+                                            </c-uikit.button>
+                                        </c-uikit.dropdown_menu.trigger>
+                                        <c-uikit.dropdown_menu.content class="w-56">
+                                            <c-uikit.dropdown_menu.label>
+                                                My Account
+                                            </c-uikit.dropdown_menu.label>
+                                            <c-uikit.dropdown_menu.separator />
+                                            <c-uikit.dropdown_menu.item>
+                                                Profile
+                                            </c-uikit.dropdown_menu.item>
+                                            <c-uikit.dropdown_menu.item>
+                                                Billing
+                                            </c-uikit.dropdown_menu.item>
+                                            <c-uikit.dropdown_menu.separator />
+                                            <c-uikit.dropdown_menu.item>
+                                                Settings
+                                            </c-uikit.dropdown_menu.item>
+                                        </c-uikit.dropdown_menu.content>
+                                    </c-uikit.dropdown_menu>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.dropdown_menu&gt;
+  &lt;c-uikit.dropdown_menu.trigger&gt;
+    &lt;c-uikit.button variant="outline"&gt;
+      Open
+    &lt;/c-uikit.button&gt;
+  &lt;/c-uikit.dropdown_menu.trigger&gt;
+  &lt;c-uikit.dropdown_menu.content class="w-56"&gt;
+    &lt;c-uikit.dropdown_menu.label&gt;
+      My Account
+    &lt;/c-uikit.dropdown_menu.label&gt;
+    &lt;c-uikit.dropdown_menu.separator /&gt;
+    &lt;c-uikit.dropdown_menu.item&gt;
+      Profile
+    &lt;/c-uikit.dropdown_menu.item&gt;
+    &lt;c-uikit.dropdown_menu.item&gt;
+      Billing
+    &lt;/c-uikit.dropdown_menu.item&gt;
+    &lt;c-uikit.dropdown_menu.separator /&gt;
+    &lt;c-uikit.dropdown_menu.item&gt;
+      Settings
+    &lt;/c-uikit.dropdown_menu.item&gt;
+  &lt;/c-uikit.dropdown_menu.content&gt;
+&lt;/c-uikit.dropdown_menu&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Forms Section -->
+                <section id="forms" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Form Components</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">Form field wrappers with labels, descriptions, and error messages</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Form Field Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Form Example</h3>
+                                <div class="max-w-md p-6 bg-card rounded-lg border border-border">
+                                    <form class="w-2/3 space-y-4">
+                                        <c-uikit.form.field>
+                                            <c-uikit.form.label for="email-form">
+                                                Email
+                                            </c-uikit.form.label>
+                                            <c-uikit.input id="email-form" type="email" placeholder="Email">
+                                            </c-uikit.input>
+                                            <c-uikit.form.description>
+                                                This will be your username.
+                                            </c-uikit.form.description>
+                                        </c-uikit.form.field>
+                                        <c-uikit.form.field>
+                                            <c-uikit.form.label for="password-form">
+                                                Password
+                                            </c-uikit.form.label>
+                                            <c-uikit.input id="password-form" type="password" placeholder="Password">
+                                            </c-uikit.input>
+                                        </c-uikit.form.field>
+                                        <c-uikit.button type="submit">
+                                            Sign in
+                                        </c-uikit.button>
+                                    </form>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;form class="w-2/3 space-y-4"&gt;
+  &lt;c-uikit.form.field&gt;
+    &lt;c-uikit.form.label for="email-form"&gt;Email&lt;/c-uikit.form.label&gt;
+    &lt;c-uikit.input id="email-form" type="email" placeholder="Email"&gt;&lt;/c-uikit.input&gt;
+    &lt;c-uikit.form.description&gt;
+      This will be your username.
+    &lt;/c-uikit.form.description&gt;
+  &lt;/c-uikit.form.field&gt;
+  &lt;c-uikit.form.field&gt;
+    &lt;c-uikit.form.label for="password-form"&gt;Password&lt;/c-uikit.form.label&gt;
+    &lt;c-uikit.input id="password-form" type="password" placeholder="Password"&gt;&lt;/c-uikit.input&gt;
+  &lt;/c-uikit.form.field&gt;
+  &lt;c-uikit.button type="submit"&gt;Sign in&lt;/c-uikit.button&gt;
+&lt;/form&gt;</code></pre>
+                                </div>
+                            </div>
+                            <!-- Form Field with Error -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Form Field with Error</h3>
+                                <div class="max-w-md p-6 bg-card rounded-lg border border-border">
+                                    <form class="w-2/3 space-y-4">
+                                        <c-uikit.form.field>
+                                            <c-uikit.form.label for="username" error="true">
+                                                Username
+                                            </c-uikit.form.label>
+                                            <c-uikit.input error="true" id="username" type="text" placeholder="Username">
+                                            </c-uikit.input>
+                                            <c-uikit.form.error>
+                                                Username already taken.
+                                            </c-uikit.form.error>
+                                        </c-uikit.form.field>
+                                        <c-uikit.button type="submit">
+                                            Submit
+                                        </c-uikit.button>
+                                    </form>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;form class="w-2/3 space-y-4"&gt;
+  &lt;c-uikit.form.field&gt;
+    &lt;c-uikit.form.label for="username" error="true"&gt;Username&lt;/c-uikit.form.label&gt;
+    &lt;c-uikit.input error="true" id="username" type="text" placeholder="Username"&gt;&lt;/c-uikit.input&gt;
+    &lt;c-uikit.form.error&gt;
+      Username already taken.
+    &lt;/c-uikit.form.error&gt;
+  &lt;/c-uikit.form.field&gt;
+  &lt;c-uikit.button type="submit"&gt;
+    Submit
+  &lt;/c-uikit.button&gt;
+&lt;/form&gt;</code></pre>
+                                </div>
+                            </div>
+                            <!-- Complete Form Example -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Complete Form</h3>
+                                <div class="max-w-md p-6 bg-card rounded-lg border border-border">
+                                    <form class="w-full space-y-4">
+                                        <c-uikit.form.field>
+                                            <c-uikit.form.label for="fullname">
+                                                Full Name
+                                            </c-uikit.form.label>
+                                            <c-uikit.input id="fullname" type="text" placeholder="John Doe">
+                                            </c-uikit.input>
+                                        </c-uikit.form.field>
+                                        <c-uikit.form.field>
+                                            <c-uikit.form.label for="email-complete">
+                                                Email
+                                            </c-uikit.form.label>
+                                            <c-uikit.input id="email-complete" type="email" placeholder="john@example.com">
+                                            </c-uikit.input>
+                                        </c-uikit.form.field>
+                                        <c-uikit.form.field>
+                                            <c-uikit.form.label for="message">
+                                                Message
+                                            </c-uikit.form.label>
+                                            <textarea id="message"
+                                                      class="flex min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                                                      placeholder="Your message..."></textarea>
+                                        </c-uikit.form.field>
+                                        <c-uikit.button type="submit" class="w-full">
+                                            Submit
+                                        </c-uikit.button>
+                                    </form>
+                                </div>
+                                <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                    <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                            onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                        Copy
+                                    </button>
+                                    <pre class="text-sm overflow-x-auto"><code>&lt;form class="w-full space-y-4"&gt;
+  &lt;c-uikit.form.field&gt;
+    &lt;c-uikit.form.label for="fullname"&gt;Full Name&lt;/c-uikit.form.label&gt;
+    &lt;c-uikit.input id="fullname" type="text" placeholder="John Doe"&gt;&lt;/c-uikit.input&gt;
+  &lt;/c-uikit.form.field&gt;
+  &lt;c-uikit.form.field&gt;
+    &lt;c-uikit.form.label for="email-complete"&gt;Email&lt;/c-uikit.form.label&gt;
+    &lt;c-uikit.input id="email-complete" type="email" placeholder="john@example.com"&gt;&lt;/c-uikit.input&gt;
+  &lt;/c-uikit.form.field&gt;
+  &lt;c-uikit.form.field&gt;
+    &lt;c-uikit.form.label for="message"&gt;Message&lt;/c-uikit.form.label&gt;
+    &lt;textarea id="message" class="flex min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" placeholder="Your message..."&gt;&lt;/textarea&gt;
+  &lt;/c-uikit.form.field&gt;
+  &lt;c-uikit.button type="submit" class="w-full"&gt;Submit&lt;/c-uikit.button&gt;
+&lt;/form&gt;</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                <!-- Inputs Section -->
+                <section id="inputs" class="scroll-mt-24">
+                    <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                        <div class="border-b border-border px-6 py-4">
+                            <h2 class="text-2xl font-bold text-card-foreground">Inputs</h2>
+                            <p class="mt-1 text-sm text-muted-foreground">Form input fields with various types</p>
+                        </div>
+                        <div class="p-6 space-y-8">
+                            <!-- Input Types -->
+                            <div class="component-showcase">
+                                <h3 class="text-lg font-semibold text-card-foreground mb-4">Input Types</h3>
+                                <div class="space-y-4 p-6 bg-card rounded-lg border border-border">
+                                    <div class="max-w-md">
+                                        <c-uikit.label for="text">
+                                            Text Input
+                                        </c-uikit.label>
+                                        <c-uikit.input id="text" type="text" placeholder="Enter text..." />
+                                    </div>
+                                    <div class="max-w-md">
+                                        <c-uikit.label for="email-input">
+                                            Email Input
+                                        </c-uikit.label>
+                                        <c-uikit.input id="email-input" type="email" placeholder="Enter email..." />
+                                    </div>
+                                    <div class="max-w-md">
+                                        <c-uikit.label for="password-input">
+                                            Password Input
+                                        </c-uikit.label>
+                                        <c-uikit.input id="password-input" type="password" placeholder="Enter password..." />
+                                    </div>
+                                    <div class="max-w-md">
+                                        <c-uikit.label for="file">
+                                            File Input
+                                        </c-uikit.label>
+                                        <c-uikit.input id="file" type="file" />
+                                    </div>
+                                    <div class="max-w-md">
+                                        <c-uikit.label for="number">
+                                            Number Input
+                                        </c-uikit.label>
+                                        <c-uikit.input id="number" type="number" placeholder="Enter number..." />
+                                    </div>
+                                    <div class="max-w-md">
+                                        <c-uikit.label for="disabled-input">
+                                            Disabled Input
+                                        </c-uikit.label>
+                                        <c-uikit.input id="disabled-input" type="text" placeholder="Disabled..." disabled />
+                                    </div>
+                                    <div class="max-w-md">
+                                        <c-uikit.label for="number">
+                                            Email Input with Button
+                                        </c-uikit.label>
+                                        <div class="flex w-full items-center space-x-2">
+                                            <c-uikit.input id="email-button" type="email" placeholder="you@example.com" />
+                                            <c-uikit.button type="submit">
+                                                Subscribe
+                                            </c-uikit.button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;div class="max-w-md"&gt;
+  &lt;c-uikit.label for="text"&gt;Text Input&lt;/c-uikit.label&gt;
+  &lt;c-uikit.input type="text" placeholder="Enter text..." /&gt;
+&lt;/div&gt;
+&lt;div class="max-w-md"&gt;
+  &lt;c-uikit.label for="email-input"&gt;Email Input&lt;/c-uikit.label&gt;
+  &lt;c-uikit.input id="email-input" type="email" placeholder="Enter email..." /&gt;
+&lt;/div&gt;
+&lt;div class="max-w-md"&gt;
+  &lt;c-uikit.label for="password-input"&gt;Password Input&lt;/c-uikit.label&gt;
+  &lt;c-uikit.input id="password-input" type="password" placeholder="Enter password..." /&gt;
+&lt;/div&gt;
+&lt;div class="max-w-md"&gt;
+  &lt;c-uikit.label for="file"&gt;File Input&lt;/c-uikit.label&gt;
+  &lt;c-uikit.input id="file" type="file" /&gt;
+&lt;/div&gt;
+&lt;div class="max-w-md"&gt;
+  &lt;c-uikit.label for="number"&gt;Number Input&lt;/c-uikit.label&gt;
+  &lt;c-uikit.input type="number" placeholder="Enter number..." /&gt;
+&lt;/div&gt;
+&lt;div class="max-w-md"&gt;
+  &lt;c-uikit.label for="disabled-input"&gt;Disabled Input&lt;/c-uikit.label&gt;
+  &lt;c-uikit.input id="disabled-input" type="text" placeholder="Disabled..." disabled /&gt;
+&lt;/div&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Label Section -->
+                    <section id="label" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Label</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">Renders an accessible label associated with controls</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Label Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                    <div class="space-y-4 p-6 bg-card rounded-lg border border-border">
+                                        <div class="space-y-2">
+                                            <c-uikit.label for="email-label">
+                                                Email address
+                                            </c-uikit.label>
+                                            <c-uikit.input id="email-label" type="email" placeholder="name@example.com" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <c-uikit.label for="terms-label">
+                                                Accept terms
+                                            </c-uikit.label>
+                                            <div class="flex items-center gap-2">
+                                                <c-uikit.checkbox id="terms-label" />
+                                                <span class="text-sm text-muted-foreground">I agree to the terms and conditions</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;div class="space-y-2"&gt;
+  &lt;c-uikit.label for="email-label"&gt;Email address&lt;/c-uikit.label&gt;
+  &lt;c-uikit.input id="email-label" type="email" placeholder="name@example.com" /&gt;
+&lt;/div&gt;
+&lt;div class="space-y-2"&gt;
+  &lt;c-uikit.label for="terms-label"&gt;Accept terms&lt;/c-uikit.label&gt;
+  &lt;div class="flex items-center gap-2"&gt;
+    &lt;c-uikit.checkbox id="terms-label" /&gt;
+    &lt;span class="text-sm text-muted-foreground"&gt;I agree to the terms and conditions&lt;/span&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Links Section -->
+                    <section id="links" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Links</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">Styled anchor links for navigation</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Link Examples -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Link Variants</h3>
+                                    <div class="flex flex-col gap-4 p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.a href="#" class="text-primary hover:text-primary/80">
+                                            Default Link
+                                        </c-uikit.a>
+                                        <c-uikit.a href="#" class="text-foreground hover:text-foreground/80">
+                                            Dark Link
+                                        </c-uikit.a>
+                                        <c-uikit.a href="#" class="text-destructive hover:text-destructive/80">
+                                            Danger Link
+                                        </c-uikit.a>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.a href="#" class="text-primary hover:text-primary/80"&gt;
+  Default Link
+&lt;/c-uikit.a&gt;
+&lt;c-uikit.a href="#" class="text-foreground hover:text-foreground/80"&gt;
+  Dark Link
+&lt;/c-uikit.a&gt;
+&lt;c-uikit.a href="#" class="text-destructive hover:text-destructive/80"&gt;
+  Danger Link
+&lt;/c-uikit.a&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Navigation Menu Section -->
+                    <section id="navigation-menu" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Navigation Menu</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">A collection of links for navigating websites</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Navigation Menu Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.navigation_menu>
+                                            <c-uikit.navigation_menu.list>
+                                                <c-uikit.navigation_menu.item>
+                                                    <c-uikit.navigation_menu.trigger index="0">
+                                                        Getting started
+                                                    </c-uikit.navigation_menu.trigger>
+                                                    <c-uikit.navigation_menu.content index="0">
+                                                        <c-uikit.navigation_menu.link href="/introduction">
+                                                            Introduction
+                                                        </c-uikit.navigation_menu.link>
+                                                        <c-uikit.navigation_menu.link href="/installation">
+                                                            Installation
+                                                        </c-uikit.navigation_menu.link>
+                                                    </c-uikit.navigation_menu.content>
+                                                </c-uikit.navigation_menu.item>
+                                                <c-uikit.navigation_menu.item>
+                                                    <c-uikit.navigation_menu.trigger index="1">
+                                                        Components
+                                                    </c-uikit.navigation_menu.trigger>
+                                                    <c-uikit.navigation_menu.content index="1">
+                                                        <div class="md:w-[150px]">
+                                                            <c-uikit.navigation_menu.link href="/accordion">
+                                                                Accordion
+                                                            </c-uikit.navigation_menu.link>
+                                                            <c-uikit.navigation_menu.link href="/button">
+                                                                Button
+                                                            </c-uikit.navigation_menu.link>
+                                                            <c-uikit.navigation_menu.link href="/card">
+                                                                Card
+                                                            </c-uikit.navigation_menu.link>
+                                                        </div>
+                                                    </c-uikit.navigation_menu.content>
+                                                </c-uikit.navigation_menu.item>
+                                                <c-uikit.navigation_menu.item>
+                                                    <c-uikit.navigation_menu.trigger index="2">
+                                                        Utilities
+                                                    </c-uikit.navigation_menu.trigger>
+                                                    <c-uikit.navigation_menu.content index="2">
+                                                        <div class="md:w-[150px]">
+                                                            <c-uikit.navigation_menu.link href="/typography">
+                                                                Typography
+                                                            </c-uikit.navigation_menu.link>
+                                                            <c-uikit.navigation_menu.link href="/icons">
+                                                                Icons
+                                                            </c-uikit.navigation_menu.link>
+                                                            <c-uikit.navigation_menu.link href="/colors">
+                                                                Colors
+                                                            </c-uikit.navigation_menu.link>
+                                                        </div>
+                                                    </c-uikit.navigation_menu.content>
+                                                </c-uikit.navigation_menu.item>
+                                                <c-uikit.navigation_menu.item>
+                                                    <c-uikit.navigation_menu.link href="https://shadcn-django.com/">
+                                                        Documentation
+                                                    </c-uikit.navigation_menu.link>
+                                                </c-uikit.navigation_menu.item>
+                                            </c-uikit.navigation_menu.list>
+                                        </c-uikit.navigation_menu>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.navigation_menu&gt;
+  &lt;c-uikit.navigation_menu.list&gt;
+    &lt;c-uikit.navigation_menu.item&gt;
+      &lt;c-uikit.navigation_menu.trigger index="0"&gt;Getting started&lt;/c-uikit.navigation_menu.trigger&gt;
+      &lt;c-uikit.navigation_menu.content index="0"&gt;
+        &lt;c-uikit.navigation_menu.link href="/introduction"&gt;Introduction&lt;/c-uikit.navigation_menu.link&gt;
+        &lt;c-uikit.navigation_menu.link href="/installation"&gt;Installation&lt;/c-uikit.navigation_menu.link&gt;
+      &lt;/c-uikit.navigation_menu.content&gt;
+    &lt;/c-uikit.navigation_menu.item&gt;
+    &lt;c-uikit.navigation_menu.item&gt;
+      &lt;c-uikit.navigation_menu.trigger index="1"&gt;Components&lt;/c-uikit.navigation_menu.trigger&gt;
+      &lt;c-uikit.navigation_menu.content index="1"&gt;
+        &lt;div class="md:w-[150px]"&gt;
+          &lt;c-uikit.navigation_menu.link href="/accordion"&gt;Accordion&lt;/c-uikit.navigation_menu.link&gt;
+          &lt;c-uikit.navigation_menu.link href="/button"&gt;Button&lt;/c-uikit.navigation_menu.link&gt;
+          &lt;c-uikit.navigation_menu.link href="/card"&gt;Card&lt;/c-uikit.navigation_menu.link&gt;
+        &lt;/div&gt;
+      &lt;/c-uikit.navigation_menu.content&gt;
+    &lt;/c-uikit.navigation_menu.item&gt;
+    &lt;c-uikit.navigation_menu.item&gt;
+      &lt;c-uikit.navigation_menu.trigger index="2"&gt;Utilities&lt;/c-uikit.navigation_menu.trigger&gt;
+      &lt;c-uikit.navigation_menu.content index="2"&gt;
+        &lt;div class="md:w-[150px]"&gt;
+          &lt;c-uikit.navigation_menu.link href="/typography"&gt;Typography&lt;/c-uikit.navigation_menu.link&gt;
+          &lt;c-uikit.navigation_menu.link href="/icons"&gt;Icons&lt;/c-uikit.navigation_menu.link&gt;
+          &lt;c-uikit.navigation_menu.link href="/colors"&gt;Colors&lt;/c-uikit.navigation_menu.link&gt;
+        &lt;/div&gt;
+      &lt;/c-uikit.navigation_menu.content&gt;
+    &lt;/c-uikit.navigation_menu.item&gt;
+    &lt;c-uikit.navigation_menu.item&gt;
+      &lt;c-uikit.navigation_menu.link href="https://shadcn-django.com/"&gt;Documentation&lt;/c-uikit.navigation_menu.link&gt;
+    &lt;/c-uikit.navigation_menu.item&gt;
+  &lt;/c-uikit.navigation_menu.list&gt;
+&lt;/c-uikit.navigation_menu&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Popover Section -->
+                    <section id="popover" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Popover</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">Displays rich content in a portal</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Popover Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.popover>
+                                            <c-uikit.popover.trigger>
+                                                <c-uikit.button variant="outline">
+                                                    Open Popover
+                                                </c-uikit.button>
+                                            </c-uikit.popover.trigger>
+                                            <c-uikit.popover.content>
+                                                Place content for popover here.
+                                            </c-uikit.popover.content>
+                                        </c-uikit.popover>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.popover&gt;
+  &lt;c-uikit.popover.trigger&gt;
+    &lt;c-uikit.button variant="outline"&gt;Open Popover&lt;/c-uikit.button&gt;
+  &lt;/c-uikit.popover.trigger&gt;
+  &lt;c-uikit.popover.content&gt;
+    Place content for popover here.
+  &lt;/c-uikit.popover.content&gt;
+&lt;/c-uikit.popover&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Progress Section -->
+                    <section id="progress" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Progress</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">Displays an indicator showing the completion progress of a task</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Progress Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                    <div class="space-y-4 p-6 bg-card rounded-lg border border-border text-card-foreground">
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between text-sm">
+                                                <span>Progress</span>
+                                                <span>25%</span>
+                                            </div>
+                                            <c-uikit.progress value="25" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between text-sm">
+                                                <span>Progress</span>
+                                                <span>60%</span>
+                                            </div>
+                                            <c-uikit.progress value="60" />
+                                        </div>
+                                        <div class="space-y-2">
+                                            <div class="flex justify-between text-sm">
+                                                <span>Complete</span>
+                                                <span>100%</span>
+                                            </div>
+                                            <c-uikit.progress value="100" />
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;div class="space-y-2"&gt;
+  &lt;div class="flex justify-between text-sm"&gt;
+    &lt;span&gt;Progress&lt;/span&gt;
+    &lt;span&gt;25%&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;c-uikit.progress value="25" /&gt;
+&lt;/div&gt;
+&lt;div class="space-y-2"&gt;
+  &lt;div class="flex justify-between text-sm"&gt;
+    &lt;span&gt;Progress&lt;/span&gt;
+    &lt;span&gt;60%&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;c-uikit.progress value="60" /&gt;
+&lt;/div&gt;
+&lt;div class="space-y-2"&gt;
+  &lt;div class="flex justify-between text-sm"&gt;
+    &lt;span&gt;Complete&lt;/span&gt;
+    &lt;span&gt;100%&lt;/span&gt;
+  &lt;/div&gt;
+  &lt;c-uikit.progress value="100" /&gt;
+&lt;/div&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Select Section -->
+                    <section id="select" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Select</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">Displays a list of options for the user to pick from</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Select Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                    <div class="max-w-xs p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.select name="fruit">
+                                            <c-uikit.select.trigger>
+                                                <c-uikit.select.value placeholder="Select a fruit" />
+                                            </c-uikit.select.trigger>
+                                            <c-uikit.select.content>
+                                                <c-uikit.select.item value="apple">
+                                                    Apple
+                                                </c-uikit.select.item>
+                                                <c-uikit.select.item value="banana">
+                                                    Banana
+                                                </c-uikit.select.item>
+                                                <c-uikit.select.item value="orange">
+                                                    Orange
+                                                </c-uikit.select.item>
+                                                <c-uikit.select.item value="grape">
+                                                    Grape
+                                                </c-uikit.select.item>
+                                            </c-uikit.select.content>
+                                        </c-uikit.select>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.select name="fruit"&gt;
+  &lt;c-uikit.select.trigger&gt;
+    &lt;c-uikit.select.value placeholder="Select a fruit" /&gt;
+  &lt;/c-uikit.select.trigger&gt;
+  &lt;c-uikit.select.content&gt;
+    &lt;c-uikit.select.item value="apple"&gt;Apple&lt;/c-uikit.select.item&gt;
+    &lt;c-uikit.select.item value="banana"&gt;Banana&lt;/c-uikit.select.item&gt;
+  &lt;/c-uikit.select.content&gt;
+&lt;/c-uikit.select&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Disabled Select Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Disabled State</h3>
+                                    <div class="max-w-xs p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.select name="library" class="w-[180px]">
+                                            <c-uikit.select.trigger disabled>
+                                                <c-uikit.select.value placeholder="Select a library" />
+                                            </c-uikit.select.trigger>
+                                        </c-uikit.select>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.select name="library" class="w-[180px]"&gt;
+  &lt;c-uikit.select.trigger disabled&gt;
+    &lt;c-uikit.select.value placeholder="Select a library" /&gt;
+  &lt;/c-uikit.select.trigger&gt;
+&lt;/c-uikit.select&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Separator Section -->
+                    <section id="separator" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Separator</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">Visually or semantically separates content</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Horizontal Separator Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border text-muted-foreground">
+                                        <div class="space-y-4">
+                                            <div class="space-y-1">
+                                                <p class="text-sm">Content above</p>
+                                                <c-uikit.separator />
+                                                <p class="text-sm">Content below</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.separator /&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Vertical Separator Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Vertical</h3>
+                                    <p class="text-sm text-muted-foreground mb-4">
+                                        Make sure you add <code class="text-red-500 bg-red-100 p-1 border rounded-md">h-5</code> to the parent container.
+                                    </p>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <div class="flex h-5 items-center space-x-4 text-sm">
+                                            <p class="text-sm text-muted-foreground">Blog</p>
+                                            <c-uikit.separator orientation="vertical" />
+                                            <p class="text-sm text-muted-foreground">Docs</p>
+                                            <c-uikit.separator orientation="vertical" />
+                                            <p class="text-sm text-muted-foreground">Source</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.separator orientation="vertical" /&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Non-decorative Separator Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Non-decorative (Semantic)</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <div class="space-y-1">
+                                            <p class="text-sm text-muted-foreground">Content above</p>
+                                            <c-uikit.separator decorative="false" />
+                                            <p class="text-sm text-muted-foreground">Content below</p>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.separator decorative="false" /&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Sheet Section -->
+                    <section id="sheet" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Sheet</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">Display content that complements the main content of the screen</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Right Sheet Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Right Sheet</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.sheet>
+                                            <c-uikit.sheet.trigger>
+                                                <c-uikit.button variant="outline">
+                                                    Open
+                                                </c-uikit.button>
+                                            </c-uikit.sheet.trigger>
+                                            <c-uikit.sheet.content side="right">
+                                                <c-uikit.sheet.header>
+                                                    <c-uikit.sheet.title>
+                                                        Right Sheet
+                                                    </c-uikit.sheet.title>
+                                                    <c-uikit.sheet.description>
+                                                        This sheet appears from the right of the screen.
+                                                    </c-uikit.sheet.description>
+                                                </c-uikit.sheet.header>
+                                            </c-uikit.sheet.content>
+                                        </c-uikit.sheet>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.sheet&gt;
+  &lt;c-uikit.sheet.trigger&gt;
+    &lt;c-uikit.button variant="outline"&gt;Open&lt;/c-uikit.button&gt;
+  &lt;/c-uikit.sheet.trigger&gt;
+  &lt;c-uikit.sheet.content side="right"&gt;
+    &lt;c-uikit.sheet.header&gt;
+      &lt;c-uikit.sheet.title&gt;Right Sheet&lt;/c-uikit.sheet.title&gt;
+      &lt;c-uikit.sheet.description&gt;
+        This sheet appears from the right of the screen.
+      &lt;/c-uikit.sheet.description&gt;
+    &lt;/c-uikit.sheet.header&gt;
+  &lt;/c-uikit.sheet.content&gt;
+&lt;/c-uikit.sheet&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- All Sides Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">All Sides</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <c-uikit.sheet>
+                                                <c-uikit.sheet.trigger>
+                                                    <c-uikit.button variant="outline" class="w-full">
+                                                        Top
+                                                    </c-uikit.button>
+                                                </c-uikit.sheet.trigger>
+                                                <c-uikit.sheet.content side="top">
+                                                    <c-uikit.sheet.header>
+                                                        <c-uikit.sheet.title>
+                                                            Top Sheet
+                                                        </c-uikit.sheet.title>
+                                                        <c-uikit.sheet.description>
+                                                            This sheet appears from the top of the screen.
+                                                        </c-uikit.sheet.description>
+                                                    </c-uikit.sheet.header>
+                                                </c-uikit.sheet.content>
+                                            </c-uikit.sheet>
+                                            <c-uikit.sheet>
+                                                <c-uikit.sheet.trigger>
+                                                    <c-uikit.button variant="outline" class="w-full">
+                                                        Right
+                                                    </c-uikit.button>
+                                                </c-uikit.sheet.trigger>
+                                                <c-uikit.sheet.content side="right">
+                                                    <c-uikit.sheet.header>
+                                                        <c-uikit.sheet.title>
+                                                            Right Sheet
+                                                        </c-uikit.sheet.title>
+                                                        <c-uikit.sheet.description>
+                                                            This sheet appears from the right of the screen.
+                                                        </c-uikit.sheet.description>
+                                                    </c-uikit.sheet.header>
+                                                </c-uikit.sheet.content>
+                                            </c-uikit.sheet>
+                                            <c-uikit.sheet>
+                                                <c-uikit.sheet.trigger>
+                                                    <c-uikit.button variant="outline" class="w-full">
+                                                        Bottom
+                                                    </c-uikit.button>
+                                                </c-uikit.sheet.trigger>
+                                                <c-uikit.sheet.content side="bottom">
+                                                    <c-uikit.sheet.header>
+                                                        <c-uikit.sheet.title>
+                                                            Bottom Sheet
+                                                        </c-uikit.sheet.title>
+                                                        <c-uikit.sheet.description>
+                                                            This sheet appears from the bottom of the screen.
+                                                        </c-uikit.sheet.description>
+                                                    </c-uikit.sheet.header>
+                                                </c-uikit.sheet.content>
+                                            </c-uikit.sheet>
+                                            <c-uikit.sheet>
+                                                <c-uikit.sheet.trigger>
+                                                    <c-uikit.button variant="outline" class="w-full">
+                                                        Left
+                                                    </c-uikit.button>
+                                                </c-uikit.sheet.trigger>
+                                                <c-uikit.sheet.content side="left">
+                                                    <c-uikit.sheet.header>
+                                                        <c-uikit.sheet.title>
+                                                            Left Sheet
+                                                        </c-uikit.sheet.title>
+                                                        <c-uikit.sheet.description>
+                                                            This sheet appears from the left of the screen.
+                                                        </c-uikit.sheet.description>
+                                                    </c-uikit.sheet.header>
+                                                </c-uikit.sheet.content>
+                                            </c-uikit.sheet>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;div class="grid grid-cols-2 gap-2"&gt;
+  &lt;c-uikit.sheet&gt;
+    &lt;c-uikit.sheet.trigger&gt;
+      &lt;c-uikit.button variant="outline" class="w-full"&gt;Top&lt;/c-uikit.button&gt;
+    &lt;/c-uikit.sheet.trigger&gt;
+    &lt;c-uikit.sheet.content side="top"&gt;
+      &lt;c-uikit.sheet.header&gt;
+        &lt;c-uikit.sheet.title&gt;Top Sheet&lt;/c-uikit.sheet.title&gt;
+        &lt;c-uikit.sheet.description&gt;
+          This sheet appears from the top of the screen.
+        &lt;/c-uikit.sheet.description&gt;
+      &lt;/c-uikit.sheet.header&gt;
+    &lt;/c-uikit.sheet.content&gt;
+  &lt;/c-uikit.sheet&gt;
+&lt;/div&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Adjust Size Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Adjust Size</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.sheet>
+                                            <c-uikit.sheet.trigger>
+                                                <c-uikit.button variant="outline" class="w-full">
+                                                    Right
+                                                </c-uikit.button>
+                                            </c-uikit.sheet.trigger>
+                                            <c-uikit.sheet.content side="right" class="w-[700px] sm:w-[540px]">
+                                                <c-uikit.sheet.header>
+                                                    <c-uikit.sheet.title>
+                                                        Adjust Sheet Size
+                                                    </c-uikit.sheet.title>
+                                                    <c-uikit.sheet.description>
+                                                        This sheet content is larger and appears from the right of the screen.
+                                                    </c-uikit.sheet.description>
+                                                </c-uikit.sheet.header>
+                                            </c-uikit.sheet.content>
+                                        </c-uikit.sheet>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.sheet&gt;
+  &lt;c-uikit.sheet.trigger&gt;
+    &lt;c-uikit.button variant="outline" class="w-full"&gt;Right&lt;/c-uikit.button&gt;
+  &lt;/c-uikit.sheet.trigger&gt;
+  &lt;c-uikit.sheet.content side="right" class="w-[700px] sm:w-[540px]"&gt;
+    &lt;c-uikit.sheet.header&gt;
+      &lt;c-uikit.sheet.title&gt;Right Sheet&lt;/c-uikit.sheet.title&gt;
+      &lt;c-uikit.sheet.description&gt;
+        This sheet appears from the right of the screen.
+      &lt;/c-uikit.sheet.description&gt;
+    &lt;/c-uikit.sheet.header&gt;
+  &lt;/c-uikit.sheet.content&gt;
+&lt;/c-uikit.sheet&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Table Section -->
+                    <section id="table" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Table</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">A responsive table component</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Table Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border text-muted-foreground">
+                                        <c-uikit.table>
+                                            <c-uikit.table.caption>
+                                                A list of your recent invoices.
+                                            </c-uikit.table.caption>
+                                            <c-uikit.table.header>
+                                                <c-uikit.table.row>
+                                                    <c-uikit.table.head class="w-[100px]">
+                                                        Invoice
+                                                    </c-uikit.table.head>
+                                                    <c-uikit.table.head>
+                                                        Status
+                                                    </c-uikit.table.head>
+                                                    <c-uikit.table.head>
+                                                        Method
+                                                    </c-uikit.table.head>
+                                                    <c-uikit.table.head class="text-right">
+                                                        Amount
+                                                    </c-uikit.table.head>
+                                                </c-uikit.table.row>
+                                            </c-uikit.table.header>
+                                            <c-uikit.table.body>
+                                                <c-uikit.table.row>
+                                                    <c-uikit.table.cell class="font-medium">
+                                                        INV001
+                                                    </c-uikit.table.cell>
+                                                    <c-uikit.table.cell>
+                                                        Paid
+                                                    </c-uikit.table.cell>
+                                                    <c-uikit.table.cell>
+                                                        Card
+                                                    </c-uikit.table.cell>
+                                                    <c-uikit.table.cell class="text-right">
+                                                        $100
+                                                    </c-uikit.table.cell>
+                                                </c-uikit.table.row>
+                                                <c-uikit.table.row>
+                                                    <c-uikit.table.cell class="font-medium">
+                                                        INV002
+                                                    </c-uikit.table.cell>
+                                                    <c-uikit.table.cell>
+                                                        Pending
+                                                    </c-uikit.table.cell>
+                                                    <c-uikit.table.cell>
+                                                        PayPal
+                                                    </c-uikit.table.cell>
+                                                    <c-uikit.table.cell class="text-right">
+                                                        $200
+                                                    </c-uikit.table.cell>
+                                                </c-uikit.table.row>
+                                                <c-uikit.table.row>
+                                                    <c-uikit.table.cell class="font-medium">
+                                                        INV003
+                                                    </c-uikit.table.cell>
+                                                    <c-uikit.table.cell>
+                                                        Failed
+                                                    </c-uikit.table.cell>
+                                                    <c-uikit.table.cell>
+                                                        Card
+                                                    </c-uikit.table.cell>
+                                                    <c-uikit.table.cell class="text-right">
+                                                        $300
+                                                    </c-uikit.table.cell>
+                                                </c-uikit.table.row>
+                                            </c-uikit.table.body>
+                                        </c-uikit.table>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.table&gt;
+  &lt;c-uikit.table.caption&gt;
+    A list of your recent invoices.
+  &lt;/c-uikit.table.caption&gt;
+  &lt;c-uikit.table.header&gt;
+    &lt;c-uikit.table.row&gt;
+      &lt;c-uikit.table.head class="w-[100px]"&gt;Invoice&lt;/c-uikit.table.head&gt;
+      &lt;c-uikit.table.head&gt;Status&lt;/c-uikit.table.head&gt;
+      &lt;c-uikit.table.head&gt;Method&lt;/c-uikit.table.head&gt;
+      &lt;c-uikit.table.head class="text-right"&gt;Amount&lt;/c-uikit.table.head&gt;
+    &lt;/c-uikit.table.row&gt;
+  &lt;/c-uikit.table.header&gt;
+  &lt;c-uikit.table.body&gt;
+    &lt;c-uikit.table.row&gt;
+      &lt;c-uikit.table.cell class="font-medium"&gt;INV001&lt;/c-uikit.table.cell&gt;
+      &lt;c-uikit.table.cell&gt;Paid&lt;/c-uikit.table.cell&gt;
+      &lt;c-uikit.table.cell&gt;Card&lt;/c-uikit.table.cell&gt;
+      &lt;c-uikit.table.cell class="text-right"&gt;$100&lt;/c-uikit.table.cell&gt;
+    &lt;/c-uikit.table.row&gt;
+  &lt;/c-uikit.table.body&gt;
+&lt;/c-uikit.table&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Empty Table Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Empty Table</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.table>
+                                            <c-uikit.table.caption>
+                                                A list of your recent invoices.
+                                            </c-uikit.table.caption>
+                                            <c-uikit.table.header>
+                                                <c-uikit.table.row>
+                                                    <c-uikit.table.head>
+                                                        Invoice
+                                                    </c-uikit.table.head>
+                                                    <c-uikit.table.head>
+                                                        Status
+                                                    </c-uikit.table.head>
+                                                    <c-uikit.table.head>
+                                                        Method
+                                                    </c-uikit.table.head>
+                                                    <c-uikit.table.head>
+                                                        Amount
+                                                    </c-uikit.table.head>
+                                                </c-uikit.table.row>
+                                            </c-uikit.table.header>
+                                            <c-uikit.table.body>
+                                                <c-uikit.table.empty />
+                                            </c-uikit.table.body>
+                                        </c-uikit.table>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.table&gt;
+  &lt;c-uikit.table.caption&gt;
+    A list of your recent invoices.
+  &lt;/c-uikit.table.caption&gt;
+  &lt;c-uikit.table.header&gt;
+    &lt;c-uikit.table.row&gt;
+      &lt;c-uikit.table.head&gt;Invoice&lt;/c-uikit.table.head&gt;
+      &lt;c-uikit.table.head&gt;Status&lt;/c-uikit.table.head&gt;
+      &lt;c-uikit.table.head&gt;Method&lt;/c-uikit.table.head&gt;
+      &lt;c-uikit.table.head&gt;Amount&lt;/c-uikit.table.head&gt;
+    &lt;/c-uikit.table.row&gt;
+  &lt;/c-uikit.table.header&gt;
+  &lt;c-uikit.table.body&gt;
+    &lt;c-uikit.table.empty /&gt;
+  &lt;/c-uikit.table.body&gt;
+&lt;/c-uikit.table&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Tabs Section -->
+                    <section id="tabs" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Tabs</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">
+                                    A set of layered sections of content—known as tab panels—that are displayed one at a time
+                                </p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Tabs Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border w-1/3">
+                                        <c-uikit.tabs default_value="account">
+                                            <c-uikit.tabs.list>
+                                                <c-uikit.tabs.trigger value="account">
+                                                    Account
+                                                </c-uikit.tabs.trigger>
+                                                <c-uikit.tabs.trigger value="password">
+                                                    Password
+                                                </c-uikit.tabs.trigger>
+                                            </c-uikit.tabs.list>
+                                            <c-uikit.tabs.content value="account">
+                                                <div class="space-y-4">
+                                                    <div>
+                                                        <h3 class="text-lg font-semibold text-card-foreground">Account</h3>
+                                                        <p class="text-sm text-muted-foreground">Make changes to your account here. Click save when you're done.</p>
+                                                    </div>
+                                                    <div class="space-y-4">
+                                                        <c-uikit.form.field>
+                                                            <c-uikit.form.label>
+                                                                Name
+                                                            </c-uikit.form.label>
+                                                            <c-uikit.input id="account-name" placeholder="Your name" />
+                                                        </c-uikit.form.field>
+                                                        <c-uikit.form.field>
+                                                            <c-uikit.form.label>
+                                                                Username
+                                                            </c-uikit.form.label>
+                                                            <c-uikit.input id="account-username" placeholder="Your username" />
+                                                        </c-uikit.form.field>
+                                                        <c-uikit.button>
+                                                            Save changes
+                                                        </c-uikit.button>
+                                                    </div>
+                                                </div>
+                                            </c-uikit.tabs.content>
+                                            <c-uikit.tabs.content value="password">
+                                                <div class="space-y-4">
+                                                    <div>
+                                                        <h3 class="text-lg font-semibold text-card-foreground">Password</h3>
+                                                        <p class="text-sm text-muted-foreground">Change your password here. After saving, you'll be logged out.</p>
+                                                    </div>
+                                                    <div class="space-y-4">
+                                                        <c-uikit.form.field>
+                                                            <c-uikit.form.label>
+                                                                Current password
+                                                            </c-uikit.form.label>
+                                                            <c-uikit.input id="current-password" type="password" />
+                                                        </c-uikit.form.field>
+                                                        <c-uikit.form.field>
+                                                            <c-uikit.form.label>
+                                                                New password
+                                                            </c-uikit.form.label>
+                                                            <c-uikit.input id="new-password" type="password" />
+                                                        </c-uikit.form.field>
+                                                        <c-uikit.button>
+                                                            Save password
+                                                        </c-uikit.button>
+                                                    </div>
+                                                </div>
+                                            </c-uikit.tabs.content>
+                                        </c-uikit.tabs>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.tabs default_value="account"&gt;
+  &lt;c-uikit.tabs.list&gt;
+    &lt;c-uikit.tabs.trigger value="account"&gt;Account&lt;/c-uikit.tabs.trigger&gt;
+    &lt;c-uikit.tabs.trigger value="password"&gt;Password&lt;/c-uikit.tabs.trigger&gt;
+  &lt;/c-uikit.tabs.list&gt;
+  &lt;c-uikit.tabs.content value="account"&gt;
+    Make changes to your account here.
+  &lt;/c-uikit.tabs.content&gt;
+  &lt;c-uikit.tabs.content value="password"&gt;
+    Change your password here.
+  &lt;/c-uikit.tabs.content&gt;
+&lt;/c-uikit.tabs&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Textarea Section -->
+                    <section id="textarea" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Textarea</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">Displays a form textarea or a component that looks like a textarea</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Basic Textarea Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Example</h3>
+                                    <div class="max-w-md p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.textarea placeholder="Type your message here." />
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.textarea placeholder="Type your message here." /&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Disabled Textarea Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Disabled</h3>
+                                    <div class="max-w-md p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.textarea placeholder="Type your message here." disabled />
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.textarea placeholder="Type your message here." disabled /&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Textarea with Label Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">With Label</h3>
+                                    <div class="max-w-md p-6 bg-card rounded-lg border border-border">
+                                        <div class="grid w-full gap-1.5">
+                                            <c-uikit.label for="textarea-message">
+                                                Your Message
+                                            </c-uikit.label>
+                                            <c-uikit.textarea id="textarea-message" placeholder="Type your message here." />
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;div class="grid w-full gap-1.5"&gt;
+  &lt;c-uikit.label for="message"&gt;Your Message&lt;/c-uikit.label&gt;
+  &lt;c-uikit.textarea id="message" placeholder="Type your message here." /&gt;
+&lt;/div&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Textarea with Button Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">With Button</h3>
+                                    <div class="max-w-md p-6 bg-card rounded-lg border border-border">
+                                        <div class="grid w-full gap-2">
+                                            <c-uikit.textarea placeholder="Type your message here." />
+                                            <c-uikit.button type="submit">
+                                                Send message
+                                            </c-uikit.button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;div class="grid w-full gap-2"&gt;
+  &lt;c-uikit.textarea placeholder="Type your message here." /&gt;
+  &lt;c-uikit.button type="submit"&gt;Send message&lt;/c-uikit.button&gt;
+&lt;/div&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- Toast Section -->
+                    <section id="toast" class="scroll-mt-24">
+                        <div class="bg-muted rounded-lg shadow-sm overflow-hidden">
+                            <div class="border-b border-border px-6 py-4">
+                                <h2 class="text-2xl font-bold text-card-foreground">Toast</h2>
+                                <p class="mt-1 text-sm text-muted-foreground">A succinct message that is displayed temporarily</p>
+                            </div>
+                            <div class="p-6 space-y-8">
+                                <!-- Simple Toast Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Simple</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.button variant="outline">
+                                            <c-uikit.toast.trigger toast_target="toast-simple">
+                                                Show Toast
+                                            </c-uikit.toast.trigger>
+                                        </c-uikit.button>
+                                        <c-uikit.toast id="toast-simple">
+                                            <c-uikit.toast.content description="Your message has been sent." />
+                                        </c-uikit.toast>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.button variant="outline"&gt;
+  &lt;c-uikit.toast.trigger toast_target="toast-simple"&gt;
+    Show Toast
+  &lt;/c-uikit.toast.trigger&gt;
+&lt;/c-uikit.button&gt;
+&lt;c-uikit.toast id="toast-simple"&gt;
+  &lt;c-uikit.toast.content description="Your message has been sent." /&gt;
+&lt;/c-uikit.toast&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Toast with Title Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">With title</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.button variant="outline">
+                                            <c-uikit.toast.trigger toast_target="toast-title">
+                                                Show Toast
+                                            </c-uikit.toast.trigger>
+                                        </c-uikit.button>
+                                        <c-uikit.toast id="toast-title">
+                                            <c-uikit.toast.content title="Success" description="Your message has been sent." />
+                                        </c-uikit.toast>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.button variant="outline"&gt;
+  &lt;c-uikit.toast.trigger toast_target="toast-title"&gt;
+    Show Toast
+  &lt;/c-uikit.toast.trigger&gt;
+&lt;/c-uikit.button&gt;
+&lt;c-uikit.toast id="toast-title"&gt;
+  &lt;c-uikit.toast.content title="Success" description="Your message has been sent." /&gt;
+&lt;/c-uikit.toast&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Toast with Action Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">With Action</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.button variant="outline">
+                                            <c-uikit.toast.trigger toast_target="toast-action">
+                                                Show Toast
+                                            </c-uikit.toast.trigger>
+                                        </c-uikit.button>
+                                        <c-uikit.toast id="toast-action">
+                                            <c-uikit.toast.content title="Success" description="Your message has been sent.">
+                                                <c-uikit.button>
+                                                    Share
+                                                </c-uikit.button>
+                                            </c-uikit.toast.content>
+                                        </c-uikit.toast>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.button variant="outline"&gt;
+  &lt;c-uikit.toast.trigger toast_target="toast-action"&gt;
+    Show Toast
+  &lt;/c-uikit.toast.trigger&gt;
+&lt;/c-uikit.button&gt;
+&lt;c-uikit.toast id="toast-action"&gt;
+  &lt;c-uikit.toast.content title="Success" description="Your message has been sent."&gt;
+    &lt;c-uikit.button&gt;Share&lt;/c-uikit.button&gt;
+  &lt;/c-uikit.toast.content&gt;
+&lt;/c-uikit.toast&gt;</code></pre>
+                                    </div>
+                                </div>
+                                <!-- Destructive Toast Example -->
+                                <div class="component-showcase">
+                                    <h3 class="text-lg font-semibold text-card-foreground mb-4">Destructive</h3>
+                                    <div class="p-6 bg-card rounded-lg border border-border">
+                                        <c-uikit.button variant="outline">
+                                            <c-uikit.toast.trigger toast_target="toast-fail">
+                                                Show Toast
+                                            </c-uikit.toast.trigger>
+                                        </c-uikit.button>
+                                        <c-uikit.toast id="toast-fail">
+                                            <c-uikit.toast.content type="destructive" title="Error" description="Your message could not be sent.">
+                                                <c-uikit.button variant="ghost">
+                                                    Retry
+                                                </c-uikit.button>
+                                            </c-uikit.toast.content>
+                                        </c-uikit.toast>
+                                    </div>
+                                    <div class="mt-4 bg-foreground rounded-lg p-4 relative">
+                                        <button class="absolute top-2 right-2 px-3 py-1 bg-card hover:bg-card/80 text-muted-foreground text-xs rounded-md transition-colors"
+                                                onclick="const btn = this; const code = this.parentElement.querySelector('code').textContent; navigator.clipboard.writeText(code).then(() => { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); });">
+                                            Copy
+                                        </button>
+                                        <pre class="text-sm overflow-x-auto"><code>&lt;c-uikit.button variant="outline"&gt;
+  &lt;c-uikit.toast.trigger toast_target="toast-fail"&gt;
+    Show Toast
+  &lt;/c-uikit.toast.trigger&gt;
+&lt;/c-uikit.button&gt;
+&lt;c-uikit.toast id="toast-fail"&gt;
+  &lt;c-uikit.toast.content type="destructive" title="Error" description="Your message could not be sent."&gt;
+    &lt;c-uikit.button variant="ghost"&gt;Retry&lt;/c-uikit.button&gt;
+  &lt;/c-uikit.toast.content&gt;
+&lt;/c-uikit.toast&gt;</code></pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <!-- Footer -->
+                <div class="mt-12 text-center text-sm text-muted-foreground">
+                    <p>Built with Django Cotton • Styled with TailwindCSS • Enhanced with Alpine.js</p>
+                </div>
+            </div>
+        </div>
+        <script>
+        // Scroll spy functionality for design system navigation
+        function initScrollSpy() {
+            const navElement = document.getElementById('design-system-nav');
+            if (!navElement) return;
+            
+            // Wait for Alpine to initialize
+            if (typeof Alpine === 'undefined') {
+                setTimeout(initScrollSpy, 50);
+                return;
+            }
+            
+            // Get Alpine.js component data
+            let alpineData = null;
+            try {
+                alpineData = Alpine.$data(navElement);
+            } catch (e) {
+                // If $data doesn't work, try accessing through __x
+                if (navElement.__x) {
+                    alpineData = navElement.__x.$data;
+                }
+            }
+            
+            if (!alpineData) {
+                setTimeout(initScrollSpy, 50);
+                return;
+            }
+            
+            const sections = ['accordion', 'alert', 'alert-dialog', 'badges', 'buttons', 'card', 'checkbox', 'command', 'command-dialog', 'dialog', 'dropdown', 'forms', 'inputs', 'label', 'links', 'navigation-menu', 'popover', 'progress', 'select', 'separator', 'sheet', 'table', 'tabs', 'textarea', 'toast'];
+            const sectionElements = {};
+            
+            // Store all section elements
+            sections.forEach(sectionId => {
+                const element = document.getElementById(sectionId);
+                if (element) {
+                    sectionElements[sectionId] = element;
+                }
+            });
+            
+            // Function to update active section based on scroll position
+            function updateActiveSection() {
+                const scrollPosition = window.scrollY + 150; // Offset for sticky header
+                let currentSection = 'accordion';
+                
+                // Find the section that's currently in view
+                for (let i = sections.length - 1; i >= 0; i--) {
+                    const sectionId = sections[i];
+                    const element = sectionElements[sectionId];
+                    if (element) {
+                        const elementTop = element.offsetTop;
+                        if (scrollPosition >= elementTop) {
+                            currentSection = sectionId;
+                            break;
+                        }
+                    }
+                }
+                
+                if (alpineData && alpineData.activeSection !== currentSection) {
+                    alpineData.activeSection = currentSection;
+                }
+            }
+            
+            // Update on scroll (throttled for performance)
+            let ticking = false;
+            window.addEventListener('scroll', () => {
+                if (!ticking) {
+                    window.requestAnimationFrame(() => {
+                        updateActiveSection();
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            }, { passive: true });
+            
+            // Initial update
+            setTimeout(updateActiveSection, 100);
+        }
+        
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initScrollSpy);
+        } else {
+            initScrollSpy();
+        }
+        
+        // Syntax highlighting for code blocks
+        document.addEventListener('DOMContentLoaded', function() {
+            const codeBlocks = document.querySelectorAll('pre code');
+            
+            codeBlocks.forEach(function(block) {
+                let html = block.innerHTML;
+                
+                // First, highlight HTML comments
+                html = html.replace(/(&lt;!--.*?--&gt;)/g, '<span class="comment">$1</span>');
+                
+                // Highlight tags (including self-closing and tags with attributes)
+                // Match: <tag> or </tag> or <tag attr="value"> or <tag />
+                html = html.replace(/(&lt;\/?)([a-zA-Z0-9\-_.]+)([^&]*?)(&gt;)/g, function(match, openBracket, tagName, attributes, closeBracket) {
+                    let highlightedTag = '<span class="tag">' + openBracket;
+                    
+                    // Check if it starts with c-uikit.
+                    if (tagName.startsWith('c-uikit.')) {
+                        highlightedTag += '<span class="tag-prefix">c-uikit.</span>' + tagName.substring(8);
+                    } else {
+                        highlightedTag += tagName;
+                    }
+                    
+                    // Highlight attributes and values within the tag
+                    if (attributes.trim()) {
+                        let highlightedAttrs = attributes.replace(/\s+([a-zA-Z0-9\-_]+)=["']([^"']*)["']/g, function(attrMatch, attrName, attrValue) {
+                            return ' <span class="attr">' + attrName + '</span>=<span class="value">"' + attrValue + '"</span>';
+                        });
+                        highlightedTag += highlightedAttrs;
+                    }
+                    
+                    highlightedTag += closeBracket + '</span>';
+                    return highlightedTag;
+                });
+                
+                block.innerHTML = html;
+            });
+        });
+        </script>
+    {% endblock content %}

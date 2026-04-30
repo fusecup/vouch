@@ -1,0 +1,34 @@
+{% load allauth %}
+{% comment %} djlint:off {% endcomment %}
+{% comment %} Determine variant based on tags {% endcomment %}
+{% if attrs.tags and "outline" in attrs.tags %}
+    <c-uikit.button variant="outline" size="default" :attrs="attrs" class="w-full">
+        {% slot %}
+        {% endslot %}
+    </c-uikit.button>
+{% elif attrs.tags and "destructive" in attrs.tags or attrs.tags and "danger" in attrs.tags %}
+    <c-uikit.button variant="destructive" size="default" :attrs="attrs" class="w-full">
+        {% slot %}
+        {% endslot %}
+    </c-uikit.button>
+{% elif attrs.tags and "secondary" in attrs.tags %}
+    <c-uikit.button variant="secondary" size="default" :attrs="attrs" class="w-full">
+        {% slot %}
+        {% endslot %}
+    </c-uikit.button>
+{% elif attrs.tags and "ghost" in attrs.tags %}
+    <c-uikit.button variant="ghost" size="default" :attrs="attrs" class="w-full">
+        {% slot %}
+        {% endslot %}
+    </c-uikit.button>
+{% elif attrs.tags and "link" in attrs.tags %}
+    <c-uikit.button variant="link" size="default" :attrs="attrs" class="w-full">
+        {% slot %}
+        {% endslot %}
+    </c-uikit.button>
+{% else %}
+    <c-uikit.button variant="default" size="default" :attrs="attrs" class="w-full">
+        {% slot %}
+        {% endslot %}
+    </c-uikit.button>
+{% endif %}

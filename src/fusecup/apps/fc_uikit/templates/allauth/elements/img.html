@@ -1,0 +1,3 @@
+<img src="{{ attrs.src }}"
+     {% if attrs.alt %}alt="{{ attrs.alt }}"{% endif %}
+     class="rounded-md {% if attrs.class %}{{ attrs.class }}{% endif %}">

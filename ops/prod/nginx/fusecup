@@ -1,0 +1,61 @@
+upstream app_server {
+    server localhost:8000;
+}
+
+server {
+  listen 80 default_server;
+  return 444;
+}
+
+server {
+    server_name fusecup.co;
+
+    if ( $http_host != "fusecup.co" ){
+        return 444; #CONNECTION CLOSED WITHOUT RESPONSE
+    }
+
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    
+    ssl_certificate         /etc/nginx/ssl/server_certificate.pem;
+    ssl_certificate_key     /etc/nginx/ssl/server_private.key;
+    ssl_ecdh_curve          secp384r1;
+    ssl_verify_client       optional_no_ca;
+    ssl_verify_depth        1;
+
+    # https://raymii.org/s/tutorials/Strong_SSL_Security_On_nginx.html
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_session_cache shared:SSL:10m;
+
+    add_header X-Frame-Options DENY;
+
+    client_max_body_size 4G;
+    keepalive_timeout 5;
+
+    # Logs
+    access_log /home/fusecup/nginx_logs/access.log;
+    error_log /home/fusecup/nginx_logs/error.log;
+
+    location /favicon.ico {
+        alias /home/fusecup/public/static/favicon/favicon.ico;
+    }
+
+    # Your Django project's media files
+    location /media  {
+        alias /home/fusecup/public/media;
+    }
+
+    # your Django project's static files
+    location /static {
+        alias /home/fusecup/public/static;
+    }
+
+    location / {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Host $http_host;
+        proxy_pass http://app_server;
+    }
+}

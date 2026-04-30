@@ -1,0 +1,70 @@
+{% load widget_tweaks common_tags %}
+<div x-data="{preview: false, is_image: true, preview_url: '', date: ''}">
+    <div x-show="preview"
+         x-cloak
+         x-transition
+         class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-75 flex justify-center items-center z-50">
+        <div class="relative w-full h-full max-w-screen-xl">
+            <img x-show="is_image"
+                 class="w-full h-full object-contain p-16"
+                 :src="preview_url"
+                 alt="">
+            <iframe x-show="! is_image"
+                    :src="preview_url"
+                    class="w-full h-full object-contain p-16"
+                    frameborder="0"> </iframe>
+            <div class="absolute inset-x-0 top-0 mt-2">
+                <div class="px-5">
+                    <div class="my-2 ml-5 mb-3 inline-flex justify-center items-center rounded-md bg-gray-100 px-2 py-1 text-md font-medium text-gray-700 ring-1 ring-inset ring-gray-500/10 text-center">
+                        <p>
+                            Uploaded on <span x-text="date"></span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="absolute top-0 right-0 p-2 flex gap-3">
+                <button @click="preview = false; preview_url:'' "
+                        class="bg-white text-gray-900 rounded-full p-2">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         viewBox="0 0 24 24"
+                         stroke-width="2"
+                         class="w-6 h-6 rounded-full fill-gray-300 stroke-black">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                    </svg>
+                </button>
+                <a :href="preview_url"
+                   download
+                   class="bg-white text-gray-900 rounded-full p-2 ml-2">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         viewBox="0 0 24 24"
+                         stroke-width="2"
+                         class="w-6 h-6 rounded-full fill-gray-300 stroke-black">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+        {% for document in documents %}
+            <div class="mb-2">
+                <div class="my-2 mb-3 w-36 md:w-44 lg:w-56 inline-flex justify-center items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-500/10 text-center">
+                    <p>{{ document.created|date:'M d, Y h:i a' }}</p>
+                </div>
+                {% if document.document|ext in 'jpg jpeg png' %}
+                    <img class="w-36 h-36 md:w-44 md:h-44 lg:w-56 lg:h-56 fill-gray-500 rounded-xl object-cover cursor-pointer"
+                         src="{{ document.document.url }}"
+                         alt=""
+                         x-on:click="preview = !preview; is_image=true, preview_url = '{{ document.document.url }}', date = '{{ document.created|date:'M d, Y h:i a' }}'">
+                {% elif document.document|ext in 'pdf csv' %}
+                    <iframe src="{{ document.document.url }}"
+                            class="w-36 h-36 lg:w-56 lg:h-56 rounded-xl"
+                            frameborder="0"> </iframe>
+                    <div class="items-center justify-items-center mt-5">
+                        <c-uikit.button x-on:click="preview = !preview; is_image=false, preview_url = '{{ document.document.url }}', date = '{{ document.created|date:'M d, Y h:i a' }}'">View this PDF</c-uikit.button>
+                    </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>

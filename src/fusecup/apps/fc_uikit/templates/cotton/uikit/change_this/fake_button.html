@@ -1,0 +1,9 @@
+{% if custom_color %}
+    <div {{ attrs }} class="{% if full_width %}flex w-full{% endif %} justify-center text-center cursor-pointer rounded-md {{ custom_color }} px-3 py-2 text-sm font-semibold leading-6 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+        {{ slot }}
+    </div>
+{% else %}
+    <div {{ attrs }} class="{% if full_width %}flex w-full{% endif %} justify-center text-center cursor-pointer rounded-md bg-primary px-3 py-2 text-sm font-semibold leading-6 text-white shadow-sm hover:bg-primary-clicked focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent">
+        {{ slot }}
+    </div>
+{% endif %}

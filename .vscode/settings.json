@@ -1,0 +1,100 @@
+{
+  "window.zoomLevel": 0,
+  "editor.formatOnSaveMode": "file",
+  "editor.formatOnSave": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}/src/.venv/bin/python",
+  "python.envFile": "${workspaceFolder}/.env",
+  "python.pythonPath": "${workspaceFolder}/src/.venv/bin/python",
+  "python.testing.pytestArgs": [
+    "src"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "ruff.configuration": "${workspaceFolder}/src/pyproject.toml",
+  "[python]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
+  },
+  "[migrations]": {
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": "never"
+    }
+  },
+  "[html][javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  },
+  "[django-html]": {
+    "editor.defaultFormatter": "monosans.djlint",
+    "editor.formatOnSave": true,
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
+  },
+  "djlint.customBlocks": [
+    "toc",
+    "example",
+    "setvar",
+    "endsetvar",
+    "element",
+    "endelement",
+    "slot",
+    "endslot"
+  ],
+  "djlint.customHtml": [
+    "c-[\\w-]+"
+  ],
+  "files.associations": {
+    "**/migrations/*.py": "migrations",
+    "**/requirements{/**,*}.{txt,in}": "pip-requirements",
+    "**/templates/**/*.html": "django-html"
+  },
+  "emmet.includeLanguages": {
+    "django-html": "html"
+  },
+  "tailwindCSS.experimental.configFile": "src/fusecup/static/css/custom.css",
+  "workbench.colorTheme": "Default Dark+",
+  "workbench.iconTheme": "vscode-icons",
+  "terminal.integrated.fontFamily": "JetBrains Mono NL",
+  "terminal.integrated.fontSize": 12,
+  "terminal.integrated.environmentChangesRelaunch": false,
+  "terminal.integrated.profiles.osx": {
+    "ZSH": {
+      "path": "/bin/zsh"
+    }
+  },
+  "terminal.integrated.defaultProfile.osx": "ZSH",
+  "terminal.integrated.profiles.linux": {
+    "ZSH": {
+      "path": "/bin/zsh"
+    }
+  },
+  "terminal.integrated.defaultProfile.linux": "ZSH",
+  "workbench.colorCustomizations": {
+    "statusBar.background": "#ff0000",
+    "statusBar.foreground": "#E3F7FF"
+  },
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableCommitSigning": true,
+  "files.exclude": {
+    "**/.git": false
+  },
+  "json.schemas": [],
+  "editor.rulers": [
+    120
+  ],
+  "todo-tree.general.statusBar": "tags",
+  "todo-tree.general.tags": [
+    "BUG",
+    "FIXME",
+    "TODO",
+    "XXX",
+    "[ ]"
+  ],
+  "coderabbit.autoReviewMode": "prompt",
+}

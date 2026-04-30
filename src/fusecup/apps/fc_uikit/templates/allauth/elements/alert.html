@@ -1,0 +1,16 @@
+{% load allauth %}
+{% if attrs.tags and "error" in attrs.tags or attrs.tags and "danger" in attrs.tags %}
+    {% c uikit.alert variant="destructive" %}
+        <div class="text-sm">
+            {% slot message %}
+            {% endslot %}
+        </div>
+    {% endc %}
+{% else %}
+    {% c uikit.alert %}
+        <div class="text-sm">
+            {% slot message %}
+            {% endslot %}
+        </div>
+    {% endc %}
+{% endif %}

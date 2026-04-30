@@ -1,0 +1,12 @@
+{% load allauth %}
+{% if attrs.align %}
+    {% c uikit.table.cell class="text-{{ attrs.align }}" %}
+        {% slot %}
+        {% endslot %}
+    {% endc %}
+{% else %}
+    {% c uikit.table.cell %}
+        {% slot %}
+        {% endslot %}
+    {% endc %}
+{% endif %}

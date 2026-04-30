@@ -1,0 +1,29 @@
+{% load widget_tweaks common_tags %}
+<div>
+    {% if not no_label %}
+        <label for="{{ field.id_for_label }}"
+               id="label_{{ field.id_for_label }}"
+               class="{% if field.errors %}text-red-600{% else %}text-gray-900{% endif %} block text-sm font-medium leading-6">
+            {{ field.label|safe }}
+            {% if field.field.required %}*{% endif %}
+        </label>
+    {% endif %}
+    <div {% if not no_label %}class="mt-2"{% endif %}>
+        <div class="flex w-full rounded-md shadow-sm ring-1 ring-inset bg-input {% if field.errors %} ring-red-600{% else %} ring-gray-300{% endif %} focus-within:ring-2 focus-within:ring-inset focus-within:ring-accent">
+            <span class="flex select-none items-center pl-3 text-main-voice sm:text-sm">https://</span>
+            {% render_field field class+="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6" %}
+        </div>
+        {% if field.help_text %}
+            {% if field.errors %}
+                <div class="p-1 px-2 text-red-600 text-xs">{{ field.help_text|safe }}</div>
+            {% else %}
+                <div class="p-1 px-2 text-gray-400 text-xs">{{ field.help_text|safe }}</div>
+            {% endif %}
+        {% endif %}
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <div class="mt-1 p-2 px-4 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>

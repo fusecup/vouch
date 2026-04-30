@@ -1,0 +1,12 @@
+{% load allauth %}
+{% if attrs.variant %}
+    {% c uikit.badge variant=attrs.variant title=attrs.title %}
+        {% slot %}
+        {% endslot %}
+    {% endc %}
+{% else %}
+    {% c uikit.badge variant="secondary" title=attrs.title %}
+        {% slot %}
+        {% endslot %}
+    {% endc %}
+{% endif %}

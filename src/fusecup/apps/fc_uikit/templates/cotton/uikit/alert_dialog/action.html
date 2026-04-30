@@ -1,0 +1,5 @@
+<c-vars variant="default" />
+{% comment %} djlint:off {% endcomment %}
+<c-uikit.button @click="hideDialog" variant="{{ variant }}" class="{% if class %}{{ class }}{% endif %}" {{ attrs }}>
+  {{ slot }}
+</c-uikit.button>

@@ -1,0 +1,31 @@
+{% load widget_tweaks common_tags %}
+<div class="flex content-start">
+    <div>
+        {% if field.errors %}
+            {% render_field field class+="size-4 rounded-sm text-primary-foreground accent-primary border border-destructive ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted disabled:border-muted-foreground border-destructive" %}
+        {% else %}
+            {% render_field field class+="size-4 rounded-sm text-primary-foreground accent-primary border border-input ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-muted disabled:border-muted-foreground" %}
+        {% endif %}
+    </div>
+    {% if not no_label %}
+        <div class="ml-2.5">
+            <label for="{{ field.id_for_label }}"
+                   class="{% if field.errors %}text-destructive{% else %}text-main-voice{% endif %} text-sm font-medium">
+                {{ field.label|safe }}
+                {% if field.field.required %}*{% endif %}
+            </label>
+        </div>
+    {% endif %}
+    {% if field.help_text %}
+        {% if field.errors %}
+            <div class="flex-1 p-1 px-2 text-destructive text-xs text-right">{{ field.help_text|safe }}</div>
+        {% else %}
+            <div class="flex-1 p-1 px-2 text-main-voice text-xs text-right">{{ field.help_text|safe }}</div>
+        {% endif %}
+    {% endif %}
+    {% if field.errors %}
+        {% for error in field.errors %}
+            <div class="mt-1 p-2 px-4 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">{{ error }}</div>
+        {% endfor %}
+    {% endif %}
+</div>

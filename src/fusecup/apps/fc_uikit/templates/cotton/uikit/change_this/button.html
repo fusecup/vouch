@@ -1,0 +1,43 @@
+{% if custom_color %}
+    {% if href %}
+        <a {{ attrs }}
+           href="{{ href }}"
+           class="inline-flex gap-x-2 items-center {% if full_width %}flex w-full{% endif %} justify-center rounded-md {{ custom_color }} px-3 py-2 text-sm font-semibold leading-6 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer">
+            {{ slot }}
+        </a>
+    {% elif non_submit %}
+        <button {{ attrs }}
+                type="button"
+                class="inline-flex gap-x-2 items-center {% if full_width %}flex w-full{% endif %} justify-center rounded-md {{ custom_color }} px-3 py-2 text-sm font-semibold leading-6 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer">
+            {{ slot }}
+        </button>
+    {% else %}
+        <button {{ attrs }}
+                id="submit"
+                type="submit"
+                class="inline-flex gap-x-2 items-center {% if full_width %}flex w-full{% endif %} justify-center rounded-md {{ custom_color }} px-3 py-2 text-sm font-semibold leading-6 shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer">
+            {{ slot }}
+        </button>
+    {% endif %}
+{% else %}
+    {% if href %}
+        <a {{ attrs }}
+           href="{{ href }}"
+           class="inline-flex gap-x-2 items-center {% if full_width %}flex w-full{% endif %} justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-primary-clicked focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer">
+            {{ slot }}
+        </a>
+    {% elif non_submit %}
+        <button {{ attrs }}
+                type="button"
+                class="inline-flex gap-x-2 items-center {% if full_width %}flex w-full{% endif %} justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-primary-clicked focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer">
+            {{ slot }}
+        </button>
+    {% else %}
+        <button {{ attrs }}
+                id="submit"
+                type="submit"
+                class="inline-flex gap-x-2 items-center {% if full_width %}flex w-full{% endif %} justify-center rounded-md bg-primary px-3 py-2 text-sm font-semibold leading-6 text-black shadow-sm hover:bg-primary-clicked focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent cursor-pointer">
+            {{ slot }}
+        </button>
+    {% endif %}
+{% endif %}

@@ -1,0 +1,9 @@
+{% extends "fc_uikit/base.html" %}
+{% block footer_content %}
+    {% if not user.is_authenticated %}
+        <p class="mt-6 text-center text-sm text-muted-foreground">
+            {% block footer_text %}
+            {% endblock footer_text %}
+        </p>
+    {% endif %}
+{% endblock footer_content %}

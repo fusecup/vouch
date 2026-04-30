@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block page_title %}
+    {% block head_title %}
+    {% endblock head_title %}
+{% endblock page_title %}
+{% block main_content %}
+    <div class="flex min-h-screen flex-col justify-center py-6 sm:py-8 lg:px-8 bg-background">
+        <div class="sm:mx-auto sm:w-full sm:max-w-md">
+            <a href="/" class="flex justify-center">
+                <img src="{% static 'img/fusecup_logo.svg' %}"
+                     alt="FuseCup"
+                     class="mx-auto h-12 w-auto" />
+            </a>
+        </div>
+        <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-[480px]">
+            <c-uikit.card class="px-6 py-8 sm:px-10">
+                <c-uikit.card.content class="space-y-6">
+                    {% if messages %}
+                        <div class="space-y-2">
+                            {% for message in messages %}
+                                {% if message.tags and "error" in message.tags or message.tags and "danger" in message.tags %}
+                                    <c-uikit.alert variant="destructive">
+                                        {{ message }}
+                                    </c-uikit.alert>
+                                {% else %}
+                                    <c-uikit.alert>
+                                        {{ message }}
+                                    </c-uikit.alert>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% block content %}
+                    {% endblock content %}
+                </c-uikit.card.content>
+            </c-uikit.card>
+            {% block footer_content %}
+                {% if user.is_authenticated %}
+                    <p class="mt-6 text-center text-sm text-muted-foreground">
+                        <a href="{% url 'account_logout' %}"
+                           class="font-medium text-primary hover:text-primary/80">{% trans "Sign Out" %}</a>
+                    </p>
+                {% endif %}
+            {% endblock footer_content %}
+        </div>
+    </div>
+{% endblock main_content %}

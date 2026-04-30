@@ -1,0 +1,8 @@
+{% comment %} djlint:off {% endcomment %}
+<div
+  @click="togglePopover"
+  class="{% if class %}{{ class }}{% endif %}"
+  {{ attrs }}
+>
+  {{ slot }}
+</div>

@@ -1,0 +1,30 @@
+{% load widget_tweaks common_tags %}
+<div>
+    {% if not no_label %}
+        <label for="{% if 'QuillWidget' in field|field_type %}quill-{{ field.id_for_label }}{% else %}{{ field.id_for_label }}{% endif %}"
+               id="label_{{ field.id_for_label }}"
+               class="{% if field.errors %}text-red-600{% else %}text-main-voice{% endif %} block text-sm font-medium leading-6">
+            {{ field.label|safe }}
+            {% if field.field.required %}*{% endif %}
+        </label>
+    {% endif %}
+    <div {% if not no_label %}class="mt-2 text-field"{% else %}class="text-field"{% endif %}>
+        {% if field.errors %}
+            {% render_field field class+="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm border-destructive" %}
+        {% else %}
+            {% render_field field class+="flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm border-input" %}
+        {% endif %}
+        {% if field.help_text %}
+            {% if field.errors %}
+                <div class="p-1 px-2 text-red-600 text-xs">{{ field.help_text|safe }}</div>
+            {% else %}
+                <div class="p-1 px-2 text-small-voice text-xs">{{ field.help_text|safe }}</div>
+            {% endif %}
+        {% endif %}
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <div class="mt-1 p-2 px-4 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>

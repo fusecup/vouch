@@ -1,0 +1,96 @@
+<!-- prettier-ignore -->
+{% load static %}
+{% load compress %}
+<!DOCTYPE html>
+<html class="no-js css-menubar" lang="en">
+  <head>
+    <script>
+      // Apply theme from localStorage immediately to prevent flash
+      (function() {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'light') {
+          document.documentElement.classList.remove('dark');
+        } else if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, user-scalable=0">
+    <meta name="description" content="fusecup.co">
+    <meta name="author" content="fusecup.co">
+    <script src="{% static 'js/htmx.min.js' %}"></script>
+    <script src="{% static 'js/sse.js' %}"></script>
+    <script src="{% static 'js/response-targets.js' %}"></script>
+    <script defer
+            src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="{% static 'js/alpine.min.js' %}"></script>
+    <title>
+      {% block page_title %}
+      {% endblock page_title %}
+    | fusecup.co</title>
+    {% compress css %}
+      <!-- Stylesheets -->
+      <link rel="stylesheet" href="{% static 'css/tw-styles.css' %}">
+      {% block page_css %}
+      {% endblock page_css %}
+    {% endcompress %}
+    {% if is_prod %}
+      {% include "common/3rd-party/posthog.html" %}
+      {% include "common/3rd-party/plausible.html" %}
+      {% if not show_cookie_banner %}
+        <!-- Google tag (gtag.js) (loaded immediately only when no banner is required) -->
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-8EN5XJGX7J"></script>
+        <script>
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('consent', 'default', {
+            analytics_storage: 'granted',
+            ad_storage: 'denied',
+            ad_user_data: 'denied',
+            ad_personalization: 'denied'
+          });
+          gtag('config', 'G-8EN5XJGX7J');
+        </script>
+        <script>
+          if (typeof window.initPosthog === 'function') {
+            window.initPosthog();
+          }
+          if (typeof window.initPlausible === 'function') {
+            window.initPlausible();
+          }
+        </script>
+      {% endif %}
+    {% endif %}
+  </head>
+  <body {% block body_attributes %} {% endblock body_attributes %}>
+    {% block main_content %}
+      {% block content %}
+      {% endblock content %}
+    {% endblock main_content %}
+    {% include "common/components/notifications.html" %}
+    {% compress js %}
+      <!-- Core  -->
+      <script src="{% static 'js/base.js' %}"></script>
+    {% endcompress %}
+    {% block page_js %}
+    {% endblock page_js %}
+    {% load tz_detect %}
+    {% tz_detect %}
+    {% if is_prod %}
+      {% if request.user.is_authenticated %}
+        <script>
+          if (typeof posthog !== 'undefined') {
+            posthog.identify(
+              '{{ request.user.id }}',
+              { email: '{{ request.user.email }}', name: '{{ request.user.full_name }}' },
+            );
+          }
+        </script>
+      {% endif %}
+    {% endif %}
+  </body>
+</html>

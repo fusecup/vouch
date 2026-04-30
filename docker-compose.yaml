@@ -1,0 +1,198 @@
+# REF: https://github.com/compose-spec/compose-spec/blob/master/spec.md#volumes-top-level-element
+
+# Volume definition
+volumes:
+  base-data: {}
+  postgres-data: {}
+  redis-data: {}
+  venv-data: {}
+  kanchi-data: {}
+
+# Default app abstraction
+x-app: &default-app
+  image: ${DOCKER_IMAGE_URL:-fusecup-backend}:${DOCKER_IMAGE_TAG:-latest}
+  build:
+    context: .
+    target: backend
+    args:
+      - "UID=${UID:-1000}"
+      - "GID=${GID:-1000}"
+      - "DEBUG=${DEBUG:-false}"
+      - "ENV=${ENV:-production}"
+  env_file:
+    - .env
+  depends_on:
+    db:
+      condition: service_started
+      required: false
+    redis:
+      condition: service_started
+      required: false
+  restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+  stop_grace_period: "3s"
+  stdin_open: true
+  tty: true
+  volumes:
+    - base-data:/data
+    - "${DOCKER_WEB_VOLUME:-./zsh-config:/code/zsh-config}"
+    - venv-data:/code/src/.venv
+
+services:
+  db:
+    # https://hub.docker.com/_/postgres
+    image: timescale/timescaledb-ha:pg18
+    env_file:
+      - .env
+    profiles: [ "postgres" ]
+    ports:
+      - "${DOCKER_DB_PORT_FORWARD:-127.0.0.1:5432}:${DB_PORT:-5432}"
+    deploy:
+      resources:
+        limits:
+          cpus: "${DOCKER_POSTGRES_CPUS:-0}"
+          memory: "${DOCKER_POSTGRES_MEMORY:-0}"
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    stop_grace_period: 3s
+    volumes:
+      - postgres-data:/var/lib/postgresql/18/docker
+      # This is uncommented only when the backup file is being restored
+      # - ./backup.dump:/docker-entrypoint-initdb.d/backup.dump
+
+  backend:
+    <<: *default-app
+    profiles: [ "backend" ]
+    ports:
+      - "${DOCKER_WEB_PORT_FORWARD:-127.0.0.1:8000}:${PORT:-8000}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    deploy:
+      resources:
+        limits:
+          cpus: "${DOCKER_WEB_CPUS:-0}"
+          memory: "${DOCKER_WEB_MEMORY:-0}"
+
+  redis:
+    # https://hub.docker.com/_/redis
+    image: redis:8.4.0-bookworm
+    profiles: [ "redis" ]
+    deploy:
+      resources:
+        limits:
+          cpus: "${DOCKER_REDIS_CPUS:-0}"
+          memory: "${DOCKER_REDIS_MEMORY:-0}"
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    stop_grace_period: 3s
+    volumes:
+      - redis-data:/data
+
+  celery-worker:
+    <<: *default-app
+    profiles: [ "celery" ]
+    command: bash -c "celery -A fusecup worker -E -l ${CELERY_LOG_LEVEL:-info}"
+    deploy:
+      resources:
+        limits:
+          cpus: "${DOCKER_WORKER_CPUS:-0}"
+          memory: "${DOCKER_WORKER_MEMORY:-0}"
+
+  celery-beat:
+    <<: *default-app
+    profiles: [ "celery" ]
+    command: bash -c "celery -A fusecup beat -l ${CELERY_LOG_LEVEL:-info}"
+    deploy:
+      resources:
+        limits:
+          cpus: "${DOCKER_WORKER_CPUS:-0}"
+          memory: "${DOCKER_WORKER_MEMORY:-0}"
+
+  celery-flower:
+    <<: *default-app
+    profiles: [ "flower" ]
+    command: bash -c "celery -A fusecup flower --url_prefix=flower --address=${DOCKER_CELERY_FLOWER_HOST:-127.0.0.1} --port=5555"
+    ports:
+      - 5555:5555
+    deploy:
+      resources:
+        limits:
+          cpus: "${DOCKER_FLOWER_CPUS:-0}"
+          memory: "${DOCKER_FLOWER_MEMORY:-0}"
+
+  kanchi:
+    # https://github.com/getkanchi/kanchi/releases
+    image: getkanchi/kanchi:1.3.7
+    profiles: [ "kanchi" ]
+    ports:
+      - "${DOCKER_KANCHI_PORT_FORWARD:-127.0.0.1:3000}:3000"
+      - "8765:8765"
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      DATABASE_URL: ${KANCHI_DATABASE_URL:-sqlite:////data/kanchi.db}
+      # Optional: Authentication (disabled by default)
+      AUTH_ENABLED: ${KANCHI_AUTH_ENABLED:-false}
+      # Optional: OAuth providers
+      AUTH_GOOGLE_ENABLED: ${KANCHI_AUTH_GOOGLE_ENABLED:-false}
+      GOOGLE_CLIENT_ID: ${KANCHI_GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${KANCHI_GOOGLE_CLIENT_SECRET:-}
+      OAUTH_REDIRECT_BASE_URL: ${KANCHI_OAUTH_REDIRECT_BASE_URL:-}
+      # Optional: Email restrictions for OAuth
+      ALLOWED_EMAIL_PATTERNS: ${KANCHI_ALLOWED_EMAIL_PATTERNS:-}
+      # Optional: CORS and host controls
+      ALLOWED_ORIGINS: ${KANCHI_ALLOWED_ORIGINS:-}
+      ALLOWED_HOSTS: ${KANCHI_ALLOWED_HOSTS:-}
+      # Optional: Security tokens (generate with: openssl rand -hex 32)
+      SESSION_SECRET_KEY: ${KANCHI_SESSION_SECRET_KEY:-kanchi}
+      TOKEN_SECRET_KEY: ${KANCHI_TOKEN_SECRET_KEY:-kanchi}
+    volumes:
+      - kanchi-data:/data
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+
+  mailcatcher:
+    # https://hub.docker.com/r/sj26/mailcatcher/tags
+    image: sj26/mailcatcher:v0.10.0
+    profiles: [ "mail" ]
+    ports:
+      - "${DOCKER_MAIL_PORT_FORWARD:-127.0.0.1:1080}:1080"
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    stop_grace_period: "0"
+
+  tailwind:
+    <<: *default-app
+    profiles: [ "tailwind" ]
+    command: bash -c "pnpm i --frozen-lockfile && pnpm run dev"
+    deploy:
+      resources:
+        limits:
+          cpus: "${DOCKER_WORKER_CPUS:-0}"
+          memory: "${DOCKER_WORKER_MEMORY:-0}"
+
+  jupyter:
+    <<: *default-app
+    profiles: [ "jupyter" ]
+    command: bash -c "python manage.py shell_plus --lab -- --allow-root --no-browser --ServerApp.ip 127.0.0.1 --ServerApp.port 2222"
+    ports:
+      - 2222:2222
+
+  nginx:
+    build: ./ops/stage/nginx
+    profiles: [ "nginx" ]
+    ports:
+      - 1337:80
+    restart: "${DOCKER_RESTART_POLICY:-unless-stopped}"
+    volumes:
+      - "${DOCKER_WEB_VOLUME:-.:/code}"
+    depends_on:
+      - backend
+
+  ngrok:
+  # https://hub.docker.com/r/ngrok/ngrok/tags
+   image: ngrok/ngrok:3.34.1-alpine
+   profiles: [ "ngrok" ]
+   ports:
+     - 4040:4040
+   command: 
+      - "http"
+      - "--url=${NGROK_URL}"
+      - "http://host.docker.internal:8000"
+   environment:
+      - NGROK_AUTHTOKEN=${NGROK_AUTH_TOKEN}
+      - NGROK_URL=${NGROK_URL}

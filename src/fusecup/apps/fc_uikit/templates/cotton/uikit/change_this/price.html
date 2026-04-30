@@ -1,0 +1,38 @@
+{% load widget_tweaks common_tags %}
+<div>
+    {% if not no_label %}
+        <label for="{{ field.id_for_label }}"
+               id="label_{{ field.id_for_label }}"
+               class="{% if field.errors %}text-red-600{% else %}text-gray-900{% endif %} block text-sm font-medium leading-6">
+            {{ field.label|safe }}
+            {% if field.field.required %}*{% endif %}
+        </label>
+    {% endif %}
+    <div {% if not no_label %}class="mt-2"{% endif %}>
+        <div class="relative rounded-md shadow-sm">
+            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                <span class="text-gray-500 sm:text-sm">$</span>
+            </div>
+            {% if field.errors %}
+                {% render_field field class+="block w-full rounded-md border-0 py-1.5 pl-7 pr-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-accent ring-red-600 sm:text-sm sm:leading-6" %}
+            {% else %}
+                {% render_field field class+="block w-full rounded-md border-0 py-1.5 pl-7 pr-12 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-accent sm:text-sm sm:leading-6" %}
+            {% endif %}
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <span class="text-gray-500 sm:text-sm" id="price-currency">USD</span>
+            </div>
+        </div>
+        {% if field.help_text %}
+            {% if field.errors %}
+                <div class="p-1 px-2 text-red-600 text-xs">{{ field.help_text|safe }}</div>
+            {% else %}
+                <div class="p-1 px-2 text-gray-400 text-xs">{{ field.help_text|safe }}</div>
+            {% endif %}
+        {% endif %}
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <div class="mt-1 p-2 px-4 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">{{ error }}</div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
