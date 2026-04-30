@@ -85,36 +85,59 @@ export default function VouchScreen() {
     setStage('result');
   };
 
-  const startRecording = async () => {
+  const startRecording = () => {
     setStage('recording');
     setRecordingMs(0);
     setEmotionResult(null);
-
-    try {
-      await captureRef.current?.start();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'capture failed';
-      setBiometricError(`capture: ${msg}`);
-      setStage('expanded');
-      return;
-    }
-
-    tickRef.current = setInterval(() => {
-      setRecordingMs((ms) => {
-        const next = ms + 100;
-        if (next >= RECORDING_TOTAL_MS) {
-          if (tickRef.current) clearInterval(tickRef.current);
-          tickRef.current = null;
-          // queue the async finishRecording outside the setter
-          setTimeout(() => {
-            finishRecording();
-          }, 0);
-          return RECORDING_TOTAL_MS;
-        }
-        return next;
-      });
-    }, 100);
+    setBiometricError(null);
+    // The actual capture + timer kicks off from a useEffect below, after the
+    // MediaCapture child has mounted inside the Dynamic Island and attached
+    // its imperative handle to captureRef.
   };
+
+  // Drive capture + timer from the stage transition so the MediaCapture child
+  // is guaranteed to be mounted (and its ref populated) before we call start().
+  useEffect(() => {
+    if (stage !== 'recording') return;
+
+    let cancelled = false;
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const begin = async () => {
+      try {
+        await captureRef.current?.start();
+      } catch (e) {
+        if (cancelled) return;
+        const msg = e instanceof Error ? e.message : 'capture failed';
+        setBiometricError(msg);
+        setStage('expanded');
+        return;
+      }
+      if (cancelled) return;
+
+      interval = setInterval(() => {
+        setRecordingMs((ms) => {
+          const next = ms + 100;
+          if (next >= RECORDING_TOTAL_MS) {
+            if (interval) clearInterval(interval);
+            interval = null;
+            setTimeout(() => finishRecording(), 0);
+            return RECORDING_TOTAL_MS;
+          }
+          return next;
+        });
+      }, 100);
+      tickRef.current = interval;
+    };
+
+    begin();
+
+    return () => {
+      cancelled = true;
+      if (interval) clearInterval(interval);
+      tickRef.current = null;
+    };
+  }, [stage]);
 
   const beginFaceId = async () => {
     setStage('faceid');
@@ -122,7 +145,7 @@ export default function VouchScreen() {
     const result = await promptBiometric();
     if (result.ok) {
       setBiometricMethod(result.method);
-      await startRecording();
+      startRecording();
     } else {
       const labels: Record<string, string> = {
         cancelled: 'cancelled by user',
