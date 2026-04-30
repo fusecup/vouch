@@ -6,7 +6,7 @@ import { type } from '@/tokens/typography';
 
 export interface MediaCaptureHandle {
   start: () => Promise<void>;
-  stop: () => Promise<{ audioBlob: Blob; mimeType: string }>;
+  stop: () => Promise<{ audioBlob: Blob; videoBlob: Blob; mimeType: string }>;
   cancel: () => void;
 }
 
@@ -24,7 +24,7 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>((_
       /* native capture wired post-prebuild */
     },
     async stop() {
-      return { audioBlob: new Blob(), mimeType: 'audio/m4a' };
+      return { audioBlob: new Blob(), videoBlob: new Blob(), mimeType: 'video/mp4' };
     },
     cancel() {
       /* no-op */

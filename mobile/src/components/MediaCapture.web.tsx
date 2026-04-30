@@ -4,7 +4,7 @@ import { colors } from '@/tokens/colors';
 
 export interface MediaCaptureHandle {
   start: () => Promise<void>;
-  stop: () => Promise<{ audioBlob: Blob; mimeType: string }>;
+  stop: () => Promise<{ audioBlob: Blob; videoBlob: Blob; mimeType: string }>;
   cancel: () => void;
 }
 
@@ -16,8 +16,10 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>(
   ({ onError }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const streamRef = useRef<MediaStream | null>(null);
-    const recorderRef = useRef<MediaRecorder | null>(null);
-    const chunksRef = useRef<Blob[]>([]);
+    const audioRecorderRef = useRef<MediaRecorder | null>(null);
+    const videoRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioChunksRef = useRef<Blob[]>([]);
+    const videoChunksRef = useRef<Blob[]>([]);
     const [active, setActive] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +27,8 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>(
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
       if (videoRef.current) videoRef.current.srcObject = null;
-      recorderRef.current = null;
+      audioRecorderRef.current = null;
+      videoRecorderRef.current = null;
       setActive(false);
     };
 
@@ -81,27 +84,54 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>(
             throw new Error('no audio track captured');
           }
 
-          const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          // Audio recorder — for emotion classification.
+          const audioMime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
             ? 'audio/webm;codecs=opus'
             : MediaRecorder.isTypeSupported('audio/webm')
               ? 'audio/webm'
               : MediaRecorder.isTypeSupported('audio/mp4')
                 ? 'audio/mp4'
                 : '';
-          const recorder = mime
-            ? new MediaRecorder(audioOnly, { mimeType: mime })
+          const audioRecorder = audioMime
+            ? new MediaRecorder(audioOnly, { mimeType: audioMime })
             : new MediaRecorder(audioOnly);
-          chunksRef.current = [];
-          recorder.ondataavailable = (e) => {
-            if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
+          audioChunksRef.current = [];
+          audioRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data);
           };
-          recorder.onerror = (e) => {
-            const msg = (e as unknown as { error?: { message?: string } }).error?.message ?? 'recorder error';
+          audioRecorder.onerror = (e) => {
+            const msg = (e as unknown as { error?: { message?: string } }).error?.message ?? 'audio recorder error';
             setError(msg);
             onError?.(msg);
           };
-          recorder.start(250);
-          recorderRef.current = recorder;
+          audioRecorder.start(250);
+          audioRecorderRef.current = audioRecorder;
+
+          // Video recorder — for playback (combined video + audio).
+          const videoMime = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+            ? 'video/webm;codecs=vp9,opus'
+            : MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+              ? 'video/webm;codecs=vp8,opus'
+              : MediaRecorder.isTypeSupported('video/webm')
+                ? 'video/webm'
+                : MediaRecorder.isTypeSupported('video/mp4')
+                  ? 'video/mp4'
+                  : '';
+          const videoRecorder = videoMime
+            ? new MediaRecorder(combined, { mimeType: videoMime })
+            : new MediaRecorder(combined);
+          videoChunksRef.current = [];
+          videoRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) videoChunksRef.current.push(e.data);
+          };
+          videoRecorder.onerror = (e) => {
+            const msg = (e as unknown as { error?: { message?: string } }).error?.message ?? 'video recorder error';
+            setError(msg);
+            onError?.(msg);
+          };
+          videoRecorder.start(500);
+          videoRecorderRef.current = videoRecorder;
+
           setActive(true);
         } catch (e) {
           const name = (e as { name?: string })?.name ?? '';
@@ -121,30 +151,68 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>(
 
       stop() {
         return new Promise((resolve) => {
-          const recorder = recorderRef.current;
-          if (!recorder || recorder.state === 'inactive') {
-            const blob = new Blob(chunksRef.current, { type: recorder?.mimeType ?? 'audio/webm' });
+          const audioRecorder = audioRecorderRef.current;
+          const videoRecorder = videoRecorderRef.current;
+
+          let audioDone = !audioRecorder || audioRecorder.state === 'inactive';
+          let videoDone = !videoRecorder || videoRecorder.state === 'inactive';
+          let audioBlob = new Blob(audioChunksRef.current, {
+            type: audioRecorder?.mimeType ?? 'audio/webm',
+          });
+          let videoBlob = new Blob(videoChunksRef.current, {
+            type: videoRecorder?.mimeType ?? 'video/webm',
+          });
+
+          const finalize = () => {
+            if (!audioDone || !videoDone) return;
             cleanup();
-            resolve({ audioBlob: blob, mimeType: blob.type });
-            return;
-          }
-          recorder.onstop = () => {
-            const blob = new Blob(chunksRef.current, { type: recorder.mimeType });
-            cleanup();
-            resolve({ audioBlob: blob, mimeType: recorder.mimeType });
+            resolve({
+              audioBlob,
+              videoBlob,
+              mimeType: videoBlob.type,
+            });
           };
-          try {
-            recorder.stop();
-          } catch {
-            cleanup();
-            resolve({ audioBlob: new Blob(chunksRef.current), mimeType: 'audio/webm' });
+
+          if (audioRecorder && !audioDone) {
+            audioRecorder.onstop = () => {
+              audioBlob = new Blob(audioChunksRef.current, { type: audioRecorder.mimeType });
+              audioDone = true;
+              finalize();
+            };
+            try {
+              audioRecorder.stop();
+            } catch {
+              audioDone = true;
+              finalize();
+            }
           }
+
+          if (videoRecorder && !videoDone) {
+            videoRecorder.onstop = () => {
+              videoBlob = new Blob(videoChunksRef.current, { type: videoRecorder.mimeType });
+              videoDone = true;
+              finalize();
+            };
+            try {
+              videoRecorder.stop();
+            } catch {
+              videoDone = true;
+              finalize();
+            }
+          }
+
+          if (audioDone && videoDone) finalize();
         });
       },
 
       cancel() {
         try {
-          recorderRef.current?.stop();
+          audioRecorderRef.current?.stop();
+        } catch {
+          /* ignore */
+        }
+        try {
+          videoRecorderRef.current?.stop();
         } catch {
           /* ignore */
         }

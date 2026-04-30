@@ -1,12 +1,14 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ApproverPlayback, ApproverRecording } from '@/components/ApproverPlayback';
 import { BloomGradient } from '@/components/BloomGradient';
 import { DynamicIslandBanner, IslandState } from '@/components/DynamicIslandBanner';
-import { MediaCapture, MediaCaptureHandle } from '@/components/MediaCapture';
-import { pendingTransactions } from '@/data/mockTransactions';
+import { LogoAvatar } from '@/components/LogoAvatar';
+import { MediaCaptureHandle } from '@/components/MediaCapture';
+import { findNextPendingTier3, pendingTransactions } from '@/data/mockTransactions';
 import { promptBiometric } from '@/services/biometric';
 import {
   classifyAudio,
@@ -16,17 +18,28 @@ import {
 } from '@/services/emotion';
 import { colors } from '@/tokens/colors';
 import { type } from '@/tokens/typography';
+import { Transaction } from '@/types/transaction';
 
 const RECORDING_TOTAL_MS = 8000;
+const FLASH_DURATION_MS = 1800;
+const COMPLETED_DELAY_MS = 1400;
 
-type Stage = 'compact' | 'expanded' | 'faceid' | 'recording' | 'classifying' | 'result';
+type Stage =
+  | 'expanded'
+  | 'faceid'
+  | 'recording'
+  | 'classifying'
+  | 'flashing'
+  | 'completed';
 
 export default function VouchScreen() {
   const insets = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ id?: string; mode?: string }>();
+  const params = useLocalSearchParams<{ id?: string }>();
 
-  const txn = useMemo(
-    () => pendingTransactions.find((t) => t.id === params.id) ?? pendingTransactions.find((t) => t.tier === 3)!,
+  const txn = useMemo<Transaction>(
+    () =>
+      pendingTransactions.find((t) => t.id === params.id) ??
+      pendingTransactions.find((t) => t.tier === 3)!,
     [params.id],
   );
 
@@ -36,23 +49,44 @@ export default function VouchScreen() {
   const [approverIndex, setApproverIndex] = useState(1);
   const [biometricError, setBiometricError] = useState<string | null>(null);
   const [biometricMethod, setBiometricMethod] = useState<string | null>(null);
-  const [emotionResult, setEmotionResult] = useState<EmotionResult | null>(null);
   const [classifierLoading, setClassifierLoading] = useState(false);
+  const [recordings, setRecordings] = useState<ApproverRecording[]>([]);
+  const [flashMessage, setFlashMessage] = useState<string | null>(null);
+  const [latestEmotion, setLatestEmotion] = useState<EmotionResult | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const captureRef = useRef<MediaCaptureHandle>(null);
 
-  const formatAmount = (amount: number) =>
-    `£${amount.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
-
+  const approversRequired = txn.approversRequired ?? 3;
   const challengePhrase = `authorize ${amountWords(txn.amount)} to ${txn.counterparty}`;
 
-  // Kick off the in-browser model load as soon as the screen mounts so the
-  // user has it warmed by the time they finish the 8s capture.
   useEffect(() => {
     setClassifierLoading(!isClassifierReady());
     preloadEmotionClassifier()
-      .catch(() => {/* falls back to heuristic */})
+      .catch(() => {/* heuristic fallback */})
       .finally(() => setClassifierLoading(false));
+  }, []);
+
+  // Reset everything when navigating to a new txn.
+  useEffect(() => {
+    setStage('expanded');
+    setRecordingMs(0);
+    setApproverIndex(1);
+    setRecordings((prev) => {
+      prev.forEach((r) => URL.revokeObjectURL(r.videoUrl));
+      return [];
+    });
+    setLatestEmotion(null);
+    setFlashMessage(null);
+    setBiometricError(null);
+    setDuress(false);
+  }, [txn.id]);
+
+  // Cleanup video object URLs on unmount.
+  useEffect(() => {
+    return () => {
+      recordings.forEach((r) => URL.revokeObjectURL(r.videoUrl));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const finishRecording = async () => {
@@ -61,42 +95,98 @@ export default function VouchScreen() {
       tickRef.current = null;
     }
     setStage('classifying');
-    let audioBlob: Blob = new Blob();
+
+    let audioBlob = new Blob();
+    let videoBlob = new Blob();
     try {
       const stopped = await captureRef.current?.stop();
-      if (stopped) audioBlob = stopped.audioBlob;
-    } catch {
-      /* ignore — fall through to classification */
-    }
-    try {
-      if (audioBlob.size > 0) {
-        const result = await classifyAudio(audioBlob);
-        setEmotionResult(result);
-      } else {
-        setEmotionResult({ label: 'no audio', score: 0, family: 'unknown' });
+      if (stopped) {
+        audioBlob = stopped.audioBlob;
+        videoBlob = stopped.videoBlob;
       }
-    } catch (e) {
-      setEmotionResult({
-        label: 'classifier error',
-        score: 0,
-        family: 'unknown',
-      });
+    } catch {
+      /* ignore */
     }
-    setStage('result');
+
+    let emotion: EmotionResult;
+    try {
+      emotion =
+        audioBlob.size > 0
+          ? await classifyAudio(audioBlob)
+          : { label: 'no audio', score: 0, family: 'unknown' };
+    } catch {
+      emotion = { label: 'classifier error', score: 0, family: 'unknown' };
+    }
+    setLatestEmotion(emotion);
+
+    const coerced = duress || emotion.family === 'coerced';
+    const reason = duress
+      ? 'rushed cadence (duress override)'
+      : emotion.family === 'coerced'
+        ? `${emotion.label} · ${(emotion.score * 100).toFixed(0)}%`
+        : undefined;
+
+    const videoUrl = videoBlob.size > 0 ? URL.createObjectURL(videoBlob) : '';
+
+    const recording: ApproverRecording = {
+      approverIndex,
+      videoUrl,
+      vouched: !coerced,
+      emotionLabel: emotion.label,
+      emotionScore: emotion.score,
+      capturedAt: new Date(),
+      durationSec: emotion.features?.durationSec ?? 8,
+      reason,
+    };
+    setRecordings((prev) => [...prev, recording]);
+
+    if (coerced) {
+      setFlashMessage(`APPROVER ${approverIndex} · COERCED · BLOCKED`);
+      setStage('flashing');
+      setTimeout(() => {
+        setStage('completed');
+        setFlashMessage(null);
+      }, FLASH_DURATION_MS * 2);
+      return;
+    }
+
+    const isLast = approverIndex >= approversRequired;
+    setFlashMessage(
+      isLast
+        ? `ALL ${approversRequired} VOUCHES IN — EXECUTING`
+        : `APPROVER ${approverIndex} VOUCHED · ROUTING TO APPROVER ${approverIndex + 1}`,
+    );
+    setStage('flashing');
+
+    setTimeout(() => {
+      if (isLast) {
+        setStage('completed');
+        setFlashMessage(null);
+        // brief breath on completed state, then move to next txn
+        setTimeout(() => {
+          const next = findNextPendingTier3(txn.id);
+          if (next) {
+            router.replace({ pathname: '/vouch', params: { id: next.id } });
+          } else {
+            router.replace('/');
+          }
+        }, COMPLETED_DELAY_MS);
+      } else {
+        setApproverIndex((i) => i + 1);
+        setStage('expanded');
+        setFlashMessage(null);
+      }
+    }, FLASH_DURATION_MS);
   };
 
   const startRecording = () => {
     setStage('recording');
     setRecordingMs(0);
-    setEmotionResult(null);
     setBiometricError(null);
-    // The actual capture + timer kicks off from a useEffect below, after the
-    // MediaCapture child has mounted inside the Dynamic Island and attached
-    // its imperative handle to captureRef.
   };
 
   // Drive capture + timer from the stage transition so the MediaCapture child
-  // is guaranteed to be mounted (and its ref populated) before we call start().
+  // is guaranteed to be mounted before we call start().
   useEffect(() => {
     if (stage !== 'recording') return;
 
@@ -137,6 +227,7 @@ export default function VouchScreen() {
       if (interval) clearInterval(interval);
       tickRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage]);
 
   const beginFaceId = async () => {
@@ -158,26 +249,23 @@ export default function VouchScreen() {
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
-      captureRef.current?.cancel();
-    };
-  }, []);
-
   const reset = () => {
     if (tickRef.current) {
       clearInterval(tickRef.current);
       tickRef.current = null;
     }
     captureRef.current?.cancel();
+    recordings.forEach((r) => URL.revokeObjectURL(r.videoUrl));
     setStage('expanded');
     setRecordingMs(0);
-    setEmotionResult(null);
+    setRecordings([]);
+    setApproverIndex(1);
+    setLatestEmotion(null);
+    setFlashMessage(null);
   };
 
-  const isCoerced =
-    duress || (emotionResult?.family === 'coerced');
+  const formatAmount = (amount: number) =>
+    `£${amount.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
 
   const islandState: IslandState =
     stage === 'expanded' || stage === 'faceid'
@@ -187,7 +275,7 @@ export default function VouchScreen() {
           counterparty: txn.counterparty,
           specterGrade: txn.specterGrade,
           approverIndex,
-          approverTotal: txn.approversRequired ?? 3,
+          approverTotal: approversRequired,
           onFaceId: beginFaceId,
         }
       : stage === 'recording'
@@ -204,16 +292,18 @@ export default function VouchScreen() {
               totalMs: RECORDING_TOTAL_MS,
               phrase: 'analysing emotion…',
             }
-          : isCoerced
-            ? {
-                kind: 'coerced',
-                reason: duress ? 'rushed cadence' : (emotionResult?.label ?? 'coerced'),
-              }
+          : stage === 'flashing'
+            ? latestEmotion?.family === 'coerced' || duress
+              ? { kind: 'coerced', reason: latestEmotion?.label ?? 'coerced' }
+              : { kind: 'vouched', emotion: latestEmotion?.label ?? 'neutral', cadence: 'ok' }
             : {
-                kind: 'vouched',
-                emotion: emotionResult?.label ?? 'neutral',
-                cadence: 'ok',
+                kind: 'compact',
+                amount: formatAmount(txn.amount),
+                tier: txn.tier as 1 | 2 | 3,
               };
+
+  const lastVouchOk = recordings.length > 0 && recordings[recordings.length - 1].vouched;
+  const blocked = recordings.some((r) => !r.vouched);
 
   return (
     <BloomGradient>
@@ -223,42 +313,83 @@ export default function VouchScreen() {
         onCaptureError={(msg) => setBiometricError(msg)}
       />
 
-      <View style={[styles.header, { paddingTop: insets.top + 64 }]}>
-        <View style={styles.headerLeftBlock}>
-          <Text style={styles.tier2Label}>TIER 2 · BIOMETRIC VOUCH</Text>
-          <Text style={styles.subhead}>{txn.counterparty}</Text>
+      {/* Flash transition banner */}
+      {flashMessage && (
+        <View
+          style={[
+            styles.flashContainer,
+            { top: insets.top + 100 },
+            blocked && { borderColor: colors.pulseRed, backgroundColor: 'rgba(40,0,0,0.8)' },
+          ]}
+          pointerEvents="none"
+        >
+          <Text style={[styles.flashText, blocked && { color: colors.pulseRed }]}>
+            {flashMessage}
+          </Text>
         </View>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.back}>✕</Text>
-        </Pressable>
-      </View>
+      )}
 
-      <View style={styles.body}>
-        {stage === 'expanded' && (
-          <ExpandedHint error={biometricError} classifierLoading={classifierLoading} />
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingTop: insets.top + 86,
+          paddingBottom: insets.bottom + 80,
+        }}
+      >
+        <View style={styles.headerBlock}>
+          <Text style={styles.tier3Label}>TIER 3 · BIOMETRIC VOUCH</Text>
+          <Pressable onPress={() => router.back()}>
+            <Text style={styles.back}>✕</Text>
+          </Pressable>
+        </View>
+
+        <SummaryCard txn={txn} approverIndex={approverIndex} approversRequired={approversRequired} recordings={recordings} />
+
+        {/* Per-approver progress + playback list */}
+        <View style={styles.approverList}>
+          {Array.from({ length: approversRequired }).map((_, idx) => {
+            const i = idx + 1;
+            const recording = recordings.find((r) => r.approverIndex === i);
+            if (recording) {
+              return <ApproverPlayback key={i} recording={recording} />;
+            }
+            const active = i === approverIndex;
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.pendingApprover,
+                  active && styles.pendingApproverActive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.pendingApproverText,
+                    active && { color: colors.accentAmber },
+                  ]}
+                >
+                  APPROVER {i} {active ? '· AWAITING BIOMETRIC' : '· LOCKED'}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Hint when expanded and last vouch was good */}
+        {stage === 'expanded' && lastVouchOk && approverIndex <= approversRequired && (
+          <Text style={styles.continueHint}>
+            tap <Text style={styles.continueHintAmber}>Face ID</Text> in the island to continue with approver {approverIndex}
+          </Text>
         )}
-        {stage === 'faceid' && <FaceIdGate />}
-        {(stage === 'recording' || stage === 'classifying') && (
-          <RecordingFrame phrase={challengePhrase} classifying={stage === 'classifying'} />
+
+        {biometricError && (
+          <Text style={styles.errorLine}>{biometricError}</Text>
         )}
-        {stage === 'result' && (
-          <ResultFrame
-            duress={duress}
-            biometricMethod={biometricMethod}
-            emotionResult={emotionResult}
-            approverIndex={approverIndex}
-            approverTotal={txn.approversRequired ?? 3}
-            onAdvanceApprover={() => {
-              if (approverIndex < (txn.approversRequired ?? 3)) {
-                setApproverIndex((i) => i + 1);
-                reset();
-              } else {
-                router.replace('/');
-              }
-            }}
-          />
+
+        {classifierLoading && stage === 'expanded' && approverIndex === 1 && (
+          <Text style={styles.classifierLine}>warming voice classifier…</Text>
         )}
-      </View>
+      </ScrollView>
 
       <View style={[styles.devRow, { paddingBottom: insets.bottom + 12 }]}>
         <Text style={styles.devLabel}>DEMO</Text>
@@ -278,287 +409,241 @@ export default function VouchScreen() {
   );
 }
 
-function ExpandedHint({
-  error,
-  classifierLoading,
-}: {
-  error: string | null;
-  classifierLoading: boolean;
-}) {
-  return (
-    <View style={styles.hintBlock}>
-      <Text style={styles.hintTitle}>VOUCH FROM THE ISLAND</Text>
-      <Text style={styles.hintBody}>
-        Tap <Text style={styles.hintEmph}>Face ID</Text> in the Dynamic Island above to begin the
-        challenge-phrase capture.
-      </Text>
-      {classifierLoading && (
-        <Text style={styles.classifierLine}>warming voice classifier…</Text>
-      )}
-      {error && <Text style={styles.errorLine}>{error}</Text>}
-    </View>
-  );
-}
-
-function FaceIdGate() {
-  return (
-    <View style={styles.faceIdFrame}>
-      <View style={styles.faceIdRing}>
-        <Text style={styles.faceIdGlyph}>◉</Text>
-      </View>
-      <Text style={styles.faceIdLabel}>WAITING FOR BIOMETRIC</Text>
-      <Text style={styles.faceIdHint}>complete the prompt on your device</Text>
-    </View>
-  );
-}
-
-function RecordingFrame({
-  phrase,
-  classifying,
-}: {
-  phrase: string;
-  classifying: boolean;
-}) {
-  return (
-    <View style={styles.recordingFrame}>
-      <Text style={styles.recordingHint}>
-        {classifying ? 'analysing voice…' : 'eyes on the island ↑'}
-      </Text>
-      <Text style={styles.teleprompter}>
-        {classifying ? 'computing emotion features' : `“${phrase}”`}
-      </Text>
-    </View>
-  );
-}
-
-function ResultFrame({
-  duress,
-  biometricMethod,
-  emotionResult,
+function SummaryCard({
+  txn,
   approverIndex,
-  approverTotal,
-  onAdvanceApprover,
+  approversRequired,
+  recordings,
 }: {
-  duress: boolean;
-  biometricMethod: string | null;
-  emotionResult: EmotionResult | null;
+  txn: Transaction;
   approverIndex: number;
-  approverTotal: number;
-  onAdvanceApprover: () => void;
+  approversRequired: number;
+  recordings: ApproverRecording[];
 }) {
-  const methodLabel =
-    biometricMethod === 'face'
-      ? 'Face ID'
-      : biometricMethod === 'fingerprint'
-        ? 'Touch ID'
-        : biometricMethod === 'webauthn'
-          ? 'Platform authenticator'
-          : 'biometric';
-
-  const coerced = duress || emotionResult?.family === 'coerced';
-  const reason =
-    duress
-      ? 'rushed cadence (duress override)'
-      : emotionResult
-        ? `${emotionResult.label} · score ${(emotionResult.score * 100).toFixed(0)}%`
-        : 'unknown';
-  const features = emotionResult?.features;
-
-  if (coerced) {
-    return (
-      <View style={[styles.resultFrame, { borderColor: colors.pulseRed, backgroundColor: '#1A0000' }]}>
-        <Text style={[styles.resultGlyph, { color: colors.pulseRed }]}>●</Text>
-        <Text style={[styles.resultTitle, { color: colors.pulseRed }]}>COERCED · BLOCKED</Text>
-        <Text style={styles.resultBody}>
-          {reason} ▲{'\n'}
-          this attestation cannot be overridden
-        </Text>
-        {features && (
-          <Text style={styles.featureLine}>
-            {features.durationSec.toFixed(1)}s · rms σ²={features.rmsVariance.toFixed(4)} · syl/s={features.syllableRate.toFixed(1)}
-          </Text>
-        )}
-      </View>
-    );
-  }
-  const last = approverIndex >= approverTotal;
+  const formatAmount = (amount: number) =>
+    `£${amount.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
   return (
-    <View style={styles.resultFrame}>
-      <Text style={[styles.resultGlyph, { color: '#3FE07D' }]}>✓</Text>
-      <Text style={styles.resultTitle}>VOUCHED</Text>
-      <Text style={styles.resultBody}>
-        {methodLabel} verified · {reason}{'\n'}
-        approver {approverIndex} of {approverTotal} complete
-      </Text>
-      {features && (
-        <Text style={styles.featureLine}>
-          {features.durationSec.toFixed(1)}s · centroid {features.spectralCentroid.toFixed(0)} Hz · syl/s {features.syllableRate.toFixed(1)}
-        </Text>
+    <View style={styles.summaryCard}>
+      <View style={styles.summaryHeader}>
+        <LogoAvatar
+          name={txn.counterparty}
+          domain={txn.domain}
+          logoUrl={txn.logoUrl}
+          brandColor={txn.brandColor}
+          size={42}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.summaryCounterparty}>{txn.counterparty}</Text>
+          <Text style={styles.summaryCategory}>{txn.category}</Text>
+        </View>
+        <View style={styles.tierPill}>
+          <Text style={styles.tierPillText}>T{txn.tier}</Text>
+        </View>
+      </View>
+      <Text style={styles.summaryAmount}>{formatAmount(txn.amount)}</Text>
+      <View style={styles.summaryDivider} />
+      <View style={styles.summaryGrid}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.summaryLabel}>REFERENCE</Text>
+          <Text style={styles.summaryValue}>{txn.reference ?? '—'}</Text>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.summaryLabel}>VOUCHES</Text>
+          <Text style={styles.summaryValue}>
+            {recordings.filter((r) => r.vouched).length} / {approversRequired}
+          </Text>
+        </View>
+      </View>
+      <View style={styles.summaryGrid}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.summaryLabel}>METHOD</Text>
+          <Text style={styles.summaryValue}>{txn.method ?? 'Plaid · CHAPS'}</Text>
+        </View>
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text style={styles.summaryLabel}>STATUS</Text>
+          <Text style={[styles.summaryValue, { color: colors.pulseRed }]}>HOLDING</Text>
+        </View>
+      </View>
+      {txn.specterNote && (
+        <>
+          <View style={styles.summaryDivider} />
+          <Text style={styles.specterNote}>
+            <Text style={{ color: colors.accentAmber }}>●● Specter {txn.specterGrade}</Text>{' '}
+            · {txn.specterNote}
+          </Text>
+        </>
       )}
-      <Pressable style={styles.advanceButton} onPress={onAdvanceApprover}>
-        <Text style={styles.advanceText}>{last ? 'EXECUTE PAYMENT' : 'NEXT APPROVER →'}</Text>
-      </Pressable>
     </View>
   );
 }
 
 function amountWords(amount: number): string {
   if (amount === 62000) return 'sixty-two thousand';
+  if (amount === 14000) return 'fourteen thousand';
+  if (amount === 8400) return 'eight thousand four hundred';
   if (amount >= 1000) return `${(amount / 1000).toFixed(0)} thousand`;
   return `${amount}`;
 }
 
 const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: 20,
+  headerBlock: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: 22,
+    marginBottom: 18,
   },
-  headerLeftBlock: {
-    gap: 6,
-  },
-  tier2Label: {
+  tier3Label: {
     ...type.caption,
     color: colors.pulseRed,
-  },
-  subhead: {
-    ...type.body,
-    color: colors.inkMono,
   },
   back: {
     color: colors.inkMono,
     fontSize: 18,
   },
-  body: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+  summaryCard: {
+    marginHorizontal: 16,
+    backgroundColor: colors.cardFill,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.cardStroke,
+    padding: 18,
+    gap: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.5,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 18 },
+    elevation: 12,
+    marginBottom: 16,
   },
-  hintBlock: {
+  summaryHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 20,
   },
-  hintTitle: {
+  summaryCounterparty: {
+    fontFamily: type.body.fontFamily,
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.cardInkPrimary,
+  },
+  summaryCategory: {
     ...type.caption,
-    color: colors.inkMono,
+    color: colors.cardInkSecondary,
+    fontSize: 10,
   },
-  hintBody: {
+  tierPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 5,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.pulseRed,
+    backgroundColor: 'rgba(255,59,48,0.12)',
+  },
+  tierPillText: {
+    ...type.caption,
+    color: colors.pulseRed,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  summaryAmount: {
+    fontFamily: type.amountHero.fontFamily,
+    fontSize: 44,
+    color: colors.cardInkPrimary,
+    letterSpacing: -0.5,
+  },
+  summaryDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.cardStroke,
+  },
+  summaryGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  summaryLabel: {
+    ...type.caption,
+    color: colors.cardInkMuted,
+    fontSize: 9.5,
+    marginBottom: 3,
+  },
+  summaryValue: {
+    fontFamily: type.body.fontFamily,
+    fontSize: 12,
+    fontWeight: '500',
+    color: colors.cardInkPrimary,
+  },
+  specterNote: {
+    fontFamily: type.body.fontFamily,
+    fontSize: 11,
+    color: colors.cardInkSecondary,
+    lineHeight: 15,
+  },
+  approverList: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  pendingApprover: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.cardStroke,
+    backgroundColor: 'rgba(0,0,0,0.32)',
+  },
+  pendingApproverActive: {
+    borderColor: colors.accentAmber,
+    backgroundColor: 'rgba(255,138,46,0.08)',
+  },
+  pendingApproverText: {
+    ...type.caption,
+    color: colors.inkMuted,
+    fontSize: 10.5,
+  },
+  continueHint: {
     ...type.body,
     color: colors.inkMono,
     textAlign: 'center',
-    fontSize: 14,
+    marginTop: 14,
+    paddingHorizontal: 32,
+    fontSize: 13,
   },
-  hintEmph: {
+  continueHintAmber: {
     color: colors.accentAmber,
   },
   errorLine: {
     ...type.caption,
     color: colors.pulseRed,
+    textAlign: 'center',
     marginTop: 8,
   },
   classifierLine: {
     ...type.caption,
     color: colors.accentAmber,
-    marginTop: 8,
     fontSize: 10,
-  },
-  featureLine: {
-    ...type.caption,
-    color: colors.inkMuted,
-    fontSize: 9,
+    textAlign: 'center',
     marginTop: 8,
-    textAlign: 'center',
   },
-  faceIdFrame: {
-    alignItems: 'center',
-    gap: 14,
-  },
-  faceIdRing: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 1.5,
-    borderColor: colors.accentAmber,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  faceIdGlyph: {
-    fontSize: 60,
-    color: colors.accentAmber,
-  },
-  faceIdLabel: {
-    ...type.caption,
-    color: colors.inkPrimary,
-    fontSize: 14,
-  },
-  faceIdHint: {
-    ...type.caption,
-    color: colors.inkMono,
-  },
-  recordingFrame: {
-    alignItems: 'center',
-    gap: 22,
-    width: '100%',
-  },
-  cameraStub: {
-    width: '78%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  recordingHint: {
-    ...type.caption,
-    color: colors.accentAmber,
-    marginBottom: 4,
-  },
-  cameraStubLabel: {
-    ...type.caption,
-    color: colors.inkMuted,
-  },
-  teleprompter: {
-    ...type.challengePhrase,
-    color: colors.inkPrimary,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  resultFrame: {
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 28,
-    borderRadius: 18,
+  flashContainer: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,30,10,0.85)',
     borderWidth: 1,
-    borderColor: colors.cardStroke,
-    backgroundColor: colors.cardFill,
+    borderColor: '#3FE07D',
+    zIndex: 200,
+    alignItems: 'center',
   },
-  resultGlyph: {
-    fontSize: 28,
-  },
-  resultTitle: {
+  flashText: {
     ...type.caption,
     color: '#3FE07D',
-    fontSize: 14,
-  },
-  resultBody: {
-    ...type.body,
-    color: colors.inkMono,
+    fontSize: 12,
+    letterSpacing: 1.4,
     textAlign: 'center',
-    lineHeight: 19,
-  },
-  advanceButton: {
-    marginTop: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.accentAmber,
-  },
-  advanceText: {
-    ...type.caption,
-    color: colors.accentAmber,
+    fontWeight: '700',
   },
   devRow: {
     flexDirection: 'row',
@@ -566,6 +651,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 20,
     paddingTop: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
   devLabel: {
     ...type.caption,
