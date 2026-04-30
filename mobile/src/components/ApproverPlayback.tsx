@@ -16,6 +16,7 @@ export interface ApproverRecording {
 
 interface ApproverPlaybackProps {
   recording: ApproverRecording;
+  remoteApprover?: { name: string; role: string; device: string };
 }
 
 export function ApproverPlayback({ recording }: ApproverPlaybackProps) {

@@ -8,6 +8,7 @@ export interface MediaCaptureHandle {
   start: () => Promise<void>;
   stop: () => Promise<{ audioBlob: Blob; videoBlob: Blob; mimeType: string }>;
   cancel: () => void;
+  captureFrameDataUrl: () => string | null;
 }
 
 interface MediaCaptureProps {
@@ -28,6 +29,9 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>((_
     },
     cancel() {
       /* no-op */
+    },
+    captureFrameDataUrl() {
+      return null;
     },
   }));
 

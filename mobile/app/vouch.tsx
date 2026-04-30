@@ -16,6 +16,7 @@ import {
   isClassifierReady,
   preloadEmotionClassifier,
 } from '@/services/emotion';
+import { classifyFaceFrame, FaceEmotionResult } from '@/services/faceEmotion';
 import { colors } from '@/tokens/colors';
 import { type } from '@/tokens/typography';
 import { Transaction } from '@/types/transaction';
@@ -30,7 +31,15 @@ type Stage =
   | 'recording'
   | 'classifying'
   | 'flashing'
+  | 'awaiting_remote'
   | 'completed';
+
+const REMOTE_APPROVER = {
+  name: 'Sarah Chen',
+  role: 'Co-founder',
+  device: 'iPhone',
+};
+const REMOTE_VOUCH_DELAY_MS = 3200;
 
 export default function VouchScreen() {
   const insets = useSafeAreaInsets();
@@ -53,6 +62,7 @@ export default function VouchScreen() {
   const [recordings, setRecordings] = useState<ApproverRecording[]>([]);
   const [flashMessage, setFlashMessage] = useState<string | null>(null);
   const [latestEmotion, setLatestEmotion] = useState<EmotionResult | null>(null);
+  const [latestFace, setLatestFace] = useState<FaceEmotionResult | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const captureRef = useRef<MediaCaptureHandle>(null);
 
@@ -76,6 +86,7 @@ export default function VouchScreen() {
       return [];
     });
     setLatestEmotion(null);
+    setLatestFace(null);
     setFlashMessage(null);
     setBiometricError(null);
     setDuress(false);
@@ -94,6 +105,10 @@ export default function VouchScreen() {
       clearInterval(tickRef.current);
       tickRef.current = null;
     }
+
+    // Snapshot the live preview before stopping the stream so Gemini has a
+    // frame to score.
+    const frameDataUrl = captureRef.current?.captureFrameDataUrl?.() ?? null;
     setStage('classifying');
 
     let audioBlob = new Blob();
@@ -108,23 +123,49 @@ export default function VouchScreen() {
       /* ignore */
     }
 
-    let emotion: EmotionResult;
-    try {
-      emotion =
-        audioBlob.size > 0
-          ? await classifyAudio(audioBlob)
-          : { label: 'no audio', score: 0, family: 'unknown' };
-    } catch {
-      emotion = { label: 'classifier error', score: 0, family: 'unknown' };
-    }
-    setLatestEmotion(emotion);
+    // Voice + face classifiers in parallel.
+    const [audioRes, faceRes] = await Promise.all([
+      (async (): Promise<EmotionResult> => {
+        try {
+          return audioBlob.size > 0
+            ? await classifyAudio(audioBlob)
+            : { label: 'no audio', score: 0, family: 'unknown' };
+        } catch {
+          return { label: 'classifier error', score: 0, family: 'unknown' };
+        }
+      })(),
+      (async (): Promise<FaceEmotionResult | null> => {
+        try {
+          return frameDataUrl ? await classifyFaceFrame(frameDataUrl) : null;
+        } catch {
+          return null;
+        }
+      })(),
+    ]);
 
-    const coerced = duress || emotion.family === 'coerced';
+    setLatestEmotion(audioRes);
+    setLatestFace(faceRes);
+
+    const voiceCoerced = audioRes.family === 'coerced';
+    const faceCoerced = faceRes?.family === 'coerced';
+    const coerced = duress || voiceCoerced || faceCoerced;
+
     const reason = duress
       ? 'rushed cadence (duress override)'
-      : emotion.family === 'coerced'
-        ? `${emotion.label} · ${(emotion.score * 100).toFixed(0)}%`
-        : undefined;
+      : voiceCoerced && faceCoerced
+        ? `voice ${audioRes.label} + face ${faceRes!.label}`
+        : voiceCoerced
+          ? `voice: ${audioRes.label} · ${(audioRes.score * 100).toFixed(0)}%`
+          : faceCoerced
+            ? `face: ${faceRes!.label} · ${(faceRes!.confidence * 100).toFixed(0)}%`
+            : undefined;
+
+    const combinedLabel = faceRes
+      ? `voice ${audioRes.label} · face ${faceRes.label}`
+      : audioRes.label;
+    const combinedScore = faceRes
+      ? Math.max(audioRes.score, faceRes.confidence)
+      : audioRes.score;
 
     const videoUrl = videoBlob.size > 0 ? URL.createObjectURL(videoBlob) : '';
 
@@ -132,10 +173,10 @@ export default function VouchScreen() {
       approverIndex,
       videoUrl,
       vouched: !coerced,
-      emotionLabel: emotion.label,
-      emotionScore: emotion.score,
+      emotionLabel: combinedLabel,
+      emotionScore: combinedScore,
       capturedAt: new Date(),
-      durationSec: emotion.features?.durationSec ?? 8,
+      durationSec: audioRes.features?.durationSec ?? 8,
       reason,
     };
     setRecordings((prev) => [...prev, recording]);
@@ -154,7 +195,7 @@ export default function VouchScreen() {
     setFlashMessage(
       isLast
         ? `ALL ${approversRequired} VOUCHES IN — EXECUTING`
-        : `APPROVER ${approverIndex} VOUCHED · ROUTING TO APPROVER ${approverIndex + 1}`,
+        : `APPROVER ${approverIndex} VOUCHED · NOTIFYING ${REMOTE_APPROVER.name.toUpperCase()}`,
     );
     setStage('flashing');
 
@@ -172,8 +213,11 @@ export default function VouchScreen() {
           }
         }, COMPLETED_DELAY_MS);
       } else {
+        // Subsequent approvers vouch remotely on their own device. We
+        // surface that off-screen state, then synthesize a vouched
+        // attestation after a short delay so the demo flows.
         setApproverIndex((i) => i + 1);
-        setStage('expanded');
+        setStage('awaiting_remote');
         setFlashMessage(null);
       }
     }, FLASH_DURATION_MS);
@@ -184,6 +228,44 @@ export default function VouchScreen() {
     setRecordingMs(0);
     setBiometricError(null);
   };
+
+  // Off-screen approver — auto-vouch after a short delay so the demo flows.
+  useEffect(() => {
+    if (stage !== 'awaiting_remote') return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (cancelled) return;
+      const remoteRecording: ApproverRecording = {
+        approverIndex,
+        videoUrl: '',
+        vouched: true,
+        emotionLabel: 'remote vouch',
+        emotionScore: 1,
+        capturedAt: new Date(),
+        durationSec: 0,
+      };
+      setRecordings((prev) => [...prev, remoteRecording]);
+      setFlashMessage(`ALL ${approversRequired} VOUCHES IN — EXECUTING`);
+      setStage('flashing');
+      setTimeout(() => {
+        setStage('completed');
+        setFlashMessage(null);
+        setTimeout(() => {
+          const next = findNextPendingTier3(txn.id);
+          if (next) {
+            router.replace({ pathname: '/vouch', params: { id: next.id } });
+          } else {
+            router.replace('/');
+          }
+        }, COMPLETED_DELAY_MS);
+      }, FLASH_DURATION_MS);
+    }, REMOTE_VOUCH_DELAY_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage]);
 
   // Drive capture + timer from the stage transition so the MediaCapture child
   // is guaranteed to be mounted before we call start().
@@ -261,6 +343,7 @@ export default function VouchScreen() {
     setRecordings([]);
     setApproverIndex(1);
     setLatestEmotion(null);
+    setLatestFace(null);
     setFlashMessage(null);
   };
 
@@ -338,8 +421,12 @@ export default function VouchScreen() {
       >
         <View style={styles.headerBlock}>
           <Text style={styles.tier3Label}>TIER 3 · BIOMETRIC VOUCH</Text>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.back}>✕</Text>
+          <Pressable
+            onPress={() => router.replace('/')}
+            style={({ pressed }) => [styles.closeButton, pressed && { opacity: 0.55 }]}
+            hitSlop={12}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
           </Pressable>
         </View>
 
@@ -349,17 +436,33 @@ export default function VouchScreen() {
         <View style={styles.approverList}>
           {Array.from({ length: approversRequired }).map((_, idx) => {
             const i = idx + 1;
+            const isRemote = i > 1;
             const recording = recordings.find((r) => r.approverIndex === i);
             if (recording) {
-              return <ApproverPlayback key={i} recording={recording} />;
+              return (
+                <ApproverPlayback
+                  key={i}
+                  recording={recording}
+                  remoteApprover={isRemote ? REMOTE_APPROVER : undefined}
+                />
+              );
             }
             const active = i === approverIndex;
+            const awaitingRemote = active && isRemote && stage === 'awaiting_remote';
+            const label = !active
+              ? `APPROVER ${i} · LOCKED`
+              : awaitingRemote
+                ? `APPROVER ${i} · ${REMOTE_APPROVER.name.toUpperCase()} · ${REMOTE_APPROVER.device.toUpperCase()}`
+                : isRemote
+                  ? `APPROVER ${i} · NOTIFYING ${REMOTE_APPROVER.name.toUpperCase()}`
+                  : `APPROVER ${i} · AWAITING BIOMETRIC`;
             return (
               <View
                 key={i}
                 style={[
                   styles.pendingApprover,
                   active && styles.pendingApproverActive,
+                  awaitingRemote && styles.pendingApproverRemote,
                 ]}
               >
                 <Text
@@ -368,8 +471,13 @@ export default function VouchScreen() {
                     active && { color: colors.accentAmber },
                   ]}
                 >
-                  APPROVER {i} {active ? '· AWAITING BIOMETRIC' : '· LOCKED'}
+                  {label}
                 </Text>
+                {awaitingRemote && (
+                  <Text style={styles.remoteSubtext}>
+                    push notification sent · awaiting biometric on {REMOTE_APPROVER.device.toLowerCase()}
+                  </Text>
+                )}
               </View>
             );
           })}
@@ -392,6 +500,13 @@ export default function VouchScreen() {
       </ScrollView>
 
       <View style={[styles.devRow, { paddingBottom: insets.bottom + 12 }]}>
+        <Pressable
+          onPress={() => router.replace('/')}
+          style={({ pressed }) => [styles.backToLedger, pressed && { opacity: 0.6 }]}
+        >
+          <Text style={styles.backToLedgerText}>← BACK TO LEDGER</Text>
+        </Pressable>
+        <View style={{ flex: 1 }} />
         <Text style={styles.devLabel}>DEMO</Text>
         <Pressable
           onPress={() => setDuress((d) => !d)}
@@ -501,6 +616,21 @@ const styles = StyleSheet.create({
     color: colors.inkMono,
     fontSize: 18,
   },
+  closeButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.inkMono,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  closeButtonText: {
+    color: colors.inkPrimary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
   summaryCard: {
     marginHorizontal: 16,
     backgroundColor: colors.cardFill,
@@ -595,10 +725,22 @@ const styles = StyleSheet.create({
     borderColor: colors.accentAmber,
     backgroundColor: 'rgba(255,138,46,0.08)',
   },
+  pendingApproverRemote: {
+    borderColor: '#3FA9FF',
+    backgroundColor: 'rgba(63,169,255,0.08)',
+  },
   pendingApproverText: {
     ...type.caption,
     color: colors.inkMuted,
     fontSize: 10.5,
+  },
+  remoteSubtext: {
+    ...type.caption,
+    fontSize: 9,
+    color: colors.inkMono,
+    marginTop: 6,
+    textTransform: 'none',
+    letterSpacing: 0.2,
   },
   continueHint: {
     ...type.body,
@@ -658,6 +800,20 @@ const styles = StyleSheet.create({
     color: colors.inkMuted,
     fontSize: 9,
     marginRight: 8,
+  },
+  backToLedger: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.accentAmber,
+    backgroundColor: 'rgba(255,138,46,0.12)',
+  },
+  backToLedgerText: {
+    ...type.caption,
+    color: colors.accentAmber,
+    fontSize: 10,
+    fontWeight: '700',
   },
   toggle: {
     paddingHorizontal: 10,

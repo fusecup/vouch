@@ -6,6 +6,7 @@ export interface MediaCaptureHandle {
   start: () => Promise<void>;
   stop: () => Promise<{ audioBlob: Blob; videoBlob: Blob; mimeType: string }>;
   cancel: () => void;
+  captureFrameDataUrl: () => string | null;
 }
 
 interface MediaCaptureProps {
@@ -217,6 +218,27 @@ export const MediaCapture = forwardRef<MediaCaptureHandle, MediaCaptureProps>(
           /* ignore */
         }
         cleanup();
+      },
+
+      captureFrameDataUrl() {
+        const video = videoRef.current;
+        if (!video || video.videoWidth === 0) return null;
+        const w = Math.min(640, video.videoWidth);
+        const h = Math.round((video.videoHeight / video.videoWidth) * w);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+        // un-mirror — the preview is scaleX(-1), restore for downstream models
+        ctx.translate(w, 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(video, 0, 0, w, h);
+        try {
+          return canvas.toDataURL('image/jpeg', 0.8);
+        } catch {
+          return null;
+        }
       },
     }));
 

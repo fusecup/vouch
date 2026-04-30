@@ -11,13 +11,135 @@ export interface ApproverRecording {
   reason?: string;
 }
 
-interface ApproverPlaybackProps {
-  recording: ApproverRecording;
+interface RemoteApprover {
+  name: string;
+  role: string;
+  device: string;
 }
 
-export function ApproverPlayback({ recording }: ApproverPlaybackProps) {
+interface ApproverPlaybackProps {
+  recording: ApproverRecording;
+  remoteApprover?: RemoteApprover;
+}
+
+export function ApproverPlayback({ recording, remoteApprover }: ApproverPlaybackProps) {
   const accent = recording.vouched ? '#3FE07D' : colors.pulseRed;
   const status = recording.vouched ? 'VOUCHED' : 'COERCED · BLOCKED';
+  const isRemote = !recording.videoUrl && !!remoteApprover;
+
+  if (isRemote) {
+    return (
+      <div
+        style={{
+          backgroundColor: colors.cardFill,
+          borderRadius: 18,
+          borderWidth: 1,
+          borderStyle: 'solid',
+          borderColor: '#3FA9FF',
+          padding: 16,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+          boxShadow: '0 18px 32px rgba(0,0,0,0.55)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              fontFamily: 'Menlo, monospace',
+              fontSize: 11,
+              letterSpacing: 1.2,
+              color: '#3FA9FF',
+              fontWeight: 700,
+            }}
+          >
+            APPROVER {recording.approverIndex} · REMOTE VOUCH ✓
+          </div>
+          <div
+            style={{
+              fontFamily: 'Menlo, monospace',
+              fontSize: 10,
+              color: colors.cardInkMuted,
+            }}
+          >
+            {recording.capturedAt.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            })}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            paddingTop: 8,
+          }}
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: '#3FA9FF',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: 'Menlo, monospace',
+              fontSize: 14,
+              fontWeight: 700,
+            }}
+          >
+            {remoteApprover.name.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+          </div>
+          <div style={{ flex: 1, fontFamily: 'Menlo, monospace' }}>
+            <div style={{ color: colors.cardInkPrimary, fontSize: 14, fontWeight: 600 }}>
+              {remoteApprover.name}
+            </div>
+            <div style={{ color: colors.cardInkSecondary, fontSize: 11 }}>
+              {remoteApprover.role} · {remoteApprover.device}
+            </div>
+          </div>
+          <div
+            style={{
+              fontFamily: 'Menlo, monospace',
+              fontSize: 10,
+              color: colors.cardInkMuted,
+              textAlign: 'right',
+            }}
+          >
+            <div style={{ marginBottom: 2 }}>VOUCHED</div>
+            <div style={{ color: '#3FE07D', fontWeight: 700 }}>off-device</div>
+          </div>
+        </div>
+
+        <div
+          style={{
+            fontFamily: 'Menlo, monospace',
+            fontSize: 10,
+            color: colors.cardInkMuted,
+            paddingTop: 8,
+            borderTop: `1px solid ${colors.cardStroke}`,
+          }}
+        >
+          attestation captured on {remoteApprover.name}'s {remoteApprover.device.toLowerCase()} ·
+          biometric + voice verified · receipt synced
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
