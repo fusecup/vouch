@@ -53,12 +53,19 @@ class PaymentIntent(models.Model):
     tier = models.CharField(max_length=8, choices=Tier.choices, default=Tier.TIER1)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
     anomaly_score = models.PositiveIntegerField(default=0)
+    scenario_source = models.CharField(max_length=64, blank=True)
+    scenario_run_id = models.CharField(max_length=64, blank=True)
+    scenario_tags = models.JSONField(default=list, blank=True)
     metadata = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     executed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ("-created_at",)
+        indexes = [
+            models.Index(fields=["tier", "status"]),
+            models.Index(fields=["scenario_run_id"]),
+        ]
 
     def __str__(self) -> str:
         return f"{self.external_id} ({self.tier})"
