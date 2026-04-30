@@ -38,13 +38,12 @@ The product *is* the escalation ladder. Each tier has a distinct UI, distinct la
 
 ### Tier 2 — Biometric vouch
 - **Triggers:** High-band amount (configurable, default £10k+), strong anomaly score, poor Specter signal (shell-like, dormant, sanctioned-adjacent), multiple risk factors stacked, or *any* request to a never-seen recipient over £25k.
-- **UI:** Native iOS app, edge-only.
-  1. **Face ID** challenge (Apple Secure Enclave).
-  2. **5–8s video selfie** reading a randomized challenge phrase containing the amount and recipient name (anti-replay).
-  3. On-device **facial emotion** classification (Vision + CoreML — neutral / stressed / fearful / coerced).
-  4. On-device **voice emotion** + speaker-verification (Apple Speech + sound classifier).
-  5. Distress-signal heuristics (forced-cadence speech, micro-expression mismatch) flag the attestation as *coerced* even if Face ID passes.
-- **Multi-party:** 3–4 approvers must each complete the biometric flow within a 30-min window. Coerced flags from any one approver block the txn.
+- **UI:** React Native app (lives in the same binary as Tier 1).
+  1. **Face ID** challenge via `react-native-biometrics` (Apple Secure Enclave on-device — template never leaves the device).
+  2. **5–8s video selfie** via `react-native-vision-camera`, reading a randomized challenge phrase containing the amount and recipient name (anti-replay).
+  3. **Facial + voice emotion** fused on the backend (Hume API or equivalent) on the captured clip — neutral / stressed / fearful / coerced. Sub-2s round-trip.
+  4. Distress-signal heuristics (forced-cadence speech, micro-expression mismatch, speech-vs-text mismatch on the challenge phrase) flag the attestation as *coerced* even if Face ID passes.
+- **Multi-party:** 2–4 approvers (configurable; demo uses 3) must each complete the biometric flow within a 30-min window. Coerced flags from any one approver block the txn.
 - **Latency target:** < 90s per approver.
 - **Failure mode:** Coerced approval (kidnap / phishing / SIM-swap social engineering). Mitigation: emotion-flag short-circuits, randomized challenge phrase prevents pre-recorded replay, geolocation diversity check across approvers.
 
@@ -78,13 +77,12 @@ Two LLM roles, deliberately split:
 
 | Layer | Stack | Owner |
 |---|---|---|
-| Money rails | Stripe Issuing / Plaid sandbox / Mercury sandbox | Member A |
-| Agent + risk scoring | Django (existing base) + Celery, Cursor SDK for the agent runtime, Anthropic SDK for Haiku/Opus, Specter API + MCP | Member B |
-| Tier 1 web/mobile-web swipe UI | Next.js + shadcn, deployed on Vercel; push via Web Push / SMS fallback | Member B (shared) |
-| Tier 2 native iOS app | SwiftUI + Vision + CoreML + AVFoundation + LocalAuthentication | Member C |
-| Dashboard / activity log | Django + HTMX (already in base) | Member A (shared) |
+| Money rails | Plaid sandbox (transactions + auth) | Member A |
+| Agent + risk scoring | Django (existing base) + Celery, Anthropic SDK for Haiku/Opus, Specter API | Member B |
+| Mobile app (Tier 1 + Tier 2) | React Native via Expo + dev client (`react-native-biometrics`, `react-native-vision-camera`); push via Expo Notifications + SMS fallback | Member C |
+| Dashboard / activity log | Django + HTMX (Python, already in base); SSE for live txn stream | Member A (shared) |
 
-The existing repo is a Django/Docker/Postgres/Celery base — agent and ledger live there. iOS app is a sibling project; talks to Django over signed REST.
+The existing repo is a Django/Docker/Postgres/Celery base — agent, dashboard, and ledger live there. The React Native app is a sibling project; talks to Django over signed REST + Expo push tokens.
 
 ## 6. Specter Integration (bonus signal)
 
@@ -95,7 +93,7 @@ Specter is the **counterparty risk oracle**. Whenever a transaction names a reci
 - Score directly shifts the tier threshold: a Specter-strong recipient drops one tier band; a Specter-empty recipient over £5k jumps to Tier 2 regardless of amount.
 - Surface the Specter mini-card inside Tier 1 swipe and Tier 2 biometric review screens.
 
-MCP path used in the agent runtime; raw API path used for the dashboard's vendor-detail drill-down.
+Specter API hits from the Django agent in production; Specter MCP wired into Cursor IDE for live company-data exploration during development and threshold tuning.
 
 ## 7. Demo Script — 90 Seconds
 
@@ -114,41 +112,46 @@ MCP path used in the agent runtime; raw API path used for the dashboard's vendor
 | Concrete workflow value | 2 | Replaces the "everyone CC'd on every payment approval" Slack chaos with calibrated automation. Quantified: the Tier 0 stat live on stage. |
 | Track fit (hybrid) | 2 | Tier 0/2 = money movement; Tier 0→1→2 routing = financial intelligence. The intelligence isn't a side feature — it is the gate. |
 | Human-in-the-loop | 1 | Three discrete tiers with explicit thresholds, confidence gates (Specter + LLM score), multi-party Tier 2, coercion detection as a *third* axis beyond authentication. |
-| Technical execution | 1 | Real rails (Member A), edge biometrics with on-device ML (Member C), Cursor SDK agent runtime (Member B). Three integrations that all work in the demo. |
+| Technical execution | 1 | Real rails via Plaid (Member A), edge biometric capture in React Native (Member C), Django agent with Specter + dual-model LLM (Member B). Three integrations that all work in the demo. |
 | Demo clarity | 1 | The duress-replay moment in the last 20s is the entire pitch in one beat. |
-| **Best use of Cursor** | +1 | Cursor SDK runs the agent loop in production (not just the IDE built it). |
+| **Best use of Cursor** | +1 | Built end-to-end in Cursor IDE with Specter MCP wired in for live company-data exploration; Cursor agent runs the eval suite that calibrates risk thresholds against historical txns. |
 | **Best use of Specter** | +1 | Counterparty quality score *changes the tier threshold* — Specter is load-bearing, not decorative. |
 | **Best use of LLM models** | +1 | Two-model split: Haiku for per-txn scoring (cost), Opus for the human-facing explanation (quality). Coercion classifier is a separate small model. |
 
-## 9. 48-Hour Build Plan
+## 9. 6-Hour Build Plan
 
-**Day 1 — morning (kickoff → 4h)**
-- A: Stand up Stripe / Plaid / Mercury sandbox; produce 50 synthetic txns.
-- B: Wire Cursor SDK agent skeleton, Anthropic SDK keys, Specter MCP. Risk-score endpoint accepts a txn → returns score.
-- C: Xcode project, Face ID flow, video capture flow. No ML yet.
+Brutal scope. Anything not on this list ships as a stub or doesn't ship.
 
-**Day 1 — afternoon (4h)**
-- A: Tier router rules engine + ledger.
-- B: Tier 1 Next.js swipe UI hitting a real txn queue. Web Push.
-- C: CoreML emotion model integrated (use a pretrained FER or Hume on-device equivalent); voice emotion via Apple sound classifier.
+**Hour 1 — scaffolding (parallel)**
+- A: Plaid sandbox auth + 30 synthetic txns landing in Django via webhook.
+- B: Django agent app, Anthropic SDK wired (Haiku 4.5), Specter API key + one working `/score` endpoint that returns a stub.
+- C: Expo + dev client project, `react-native-biometrics` + `react-native-vision-camera` installed, Face ID prompt working on a physical phone.
 
-**Day 1 — evening (4h)**
-- All three: end-to-end happy path — txn → Tier 0 receipt, txn → Tier 1 swipe, txn → Tier 2 biometric. Bugs ok.
+**Hour 2 — happy path bones**
+- A: Tier router (deterministic rules: amount + Specter score → tier 0/1/2) + ledger model + Plaid execution stub.
+- B: Real risk scorer call to Haiku with txn JSON + Specter payload; returns score + reasons.
+- C: Tier 1 swipe UI in RN — card stack of pending txns from Django, swipe right hits `/approve`.
 
-**Day 2 — morning (4h)**
-- B: Specter-driven tier shifting; Opus explainer integration.
-- C: Multi-party orchestration, randomized challenge phrase, coercion flag.
-- A: Dashboard polish + activity log streaming.
+**Hour 3 — Tier 2 capture + Specter live**
+- A: Dashboard list view + SSE stream of receipts.
+- B: Specter live integration — funding/headcount/news → counterparty quality score → tier shift logic.
+- C: Tier 2 screen — Face ID gate, video capture of randomized challenge phrase, upload to Django.
 
-**Day 2 — afternoon (4h)**
-- All: dry-run demo 5×. Pre-enroll judge phones. Cut anything that doesn't survive 3 dry runs.
+**Hour 4 — emotion + multi-party**
+- B: Hume (or chosen) emotion API call on uploaded clip; coercion fusion logic; Opus 4.7 explainer for Tier 1 cards.
+- C: 3-approver orchestration — txn requires 3 vouches within 30 min; any coerced flag blocks.
+- A: Dashboard polish — Tier 0 counter, live receipt feed.
 
-**Day 2 — evening:** sleep.
+**Hour 5 — end-to-end + demo wiring**
+- All: full happy path runs three times: Tier 0 auto-pay, Tier 1 swipe, Tier 2 biometric multi-party. Pre-enroll the demo phones (presenter + 2 teammates as approvers). Pre-cache 3 demo recipients in Specter.
+
+**Hour 6 — dry runs**
+- All: run the 90s demo end-to-end 5×. Any step that fails twice gets cut or stubbed. Lock the duress-replay moment last — it's the only sacred segment.
 
 ## 10. What Vouch Will Not Do (Guardrail on the Guardrail)
 
 - Will not move money without rails approval — Tier 2 multi-party block is hard, not advisory.
-- Will not store biometric data off-device — Face/voice templates never leave the Secure Enclave; only the binary pass/fail and emotion flags hit the server.
+- Will not store the Face ID template off-device — it stays in the Secure Enclave. Challenge-phrase video/audio is sent to the server for emotion analysis with a hard 24h retention TTL.
 - Will not auto-pay an unknown counterparty over £5k regardless of risk score.
 - Will not adapt thresholds without an audit trail — every threshold change is a signed config event.
 - Will not silently override a coerced flag — a coerced attestation always blocks, even with sufficient other approvals.
@@ -157,12 +160,12 @@ MCP path used in the agent runtime; raw API path used for the dashboard's vendor
 
 | Risk | Mitigation |
 |---|---|
-| iOS provisioning blows up day-of | TestFlight links pre-distributed to judges + a web-fallback WebAuthn flow stays warm. |
+| Expo dev client / RN native module flakes day-of | Pre-build the binary via EAS the night before; install on all 3 demo phones in advance. |
 | Specter rate-limits during demo | Pre-cache the 3 demo recipients' Specter payloads, with a "live API" toggle for the judges who care. |
-| Voice emotion model misfires on the duress demo | Tune threshold against the presenter's voice in dry runs; have a "force coerced" debug button as last-resort theatre — but only as fallback, the live one is the goal. |
-| Stripe/Plaid sandbox flakes | Local mock ledger with identical interface; demo can fall through. |
+| Emotion API misfires on the duress demo | Tune threshold against the presenter's voice in Hour 6 dry runs; keep a "force coerced" debug button as fallback theatre — but the live one is the goal. |
+| Plaid sandbox flakes | Local mock ledger with identical interface; demo can fall through. |
 | 90-second pacing slips | Cut the Tier 0 cold-open down to 5s if needed; the duress moment is the only sacred segment. |
 
 ---
 
-*Built in Cursor. Runs on Cursor SDK. Reads Specter. Asks for a vouch.*
+*Built in Cursor. Moves money on Plaid. Reads Specter. Asks for a vouch.*
