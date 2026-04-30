@@ -1,4 +1,5 @@
 {
+    "license": "MIT",
     "scripts": {
         "dev": "pnpx @tailwindcss/cli --input './src/vouch/static/css/custom.css' --output './src/vouch/static/css/tw-styles.css' --watch"
     },

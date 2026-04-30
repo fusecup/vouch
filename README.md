@@ -1,8 +1,22 @@
-# Vouch
+<div align="center">
 
-**An agent that moves money. With a face on it.**
+<h1>Vouch</h1>
 
-*Cursor × Briefcase · Halkin Offices · London 2026*
+<p><strong>An agent that moves money. With a face on it.</strong></p>
+
+<p>
+  <a href="https://github.com/fusecup/vouch/actions/workflows/CI.yml"><img alt="Continuous Integration" src="https://github.com/fusecup/vouch/actions/workflows/CI.yml/badge.svg"></a>
+  <a href="https://github.com/fusecup/vouch/actions/workflows/CD-STAGE.yml"><img alt="Stage Deploy" src="https://github.com/fusecup/vouch/actions/workflows/CD-STAGE.yml/badge.svg"></a>
+  <a href="https://github.com/fusecup/vouch/actions/workflows/CD-PROD.yml"><img alt="Production Deploy" src="https://github.com/fusecup/vouch/actions/workflows/CD-PROD.yml/badge.svg"></a>
+  <a href="./src/pyproject.toml"><img alt="Python 3.14+" src="https://img.shields.io/badge/python-3.14%2B-3776AB?logo=python&logoColor=white"></a>
+  <a href="./src/pyproject.toml"><img alt="Django 6.0+" src="https://img.shields.io/badge/django-6.0%2B-092E20?logo=django&logoColor=white"></a>
+  <a href="./mobile/package.json"><img alt="Expo 52" src="https://img.shields.io/badge/expo-52-000020?logo=expo&logoColor=white"></a>
+  <a href="./LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-yellow.svg"></a>
+</p>
+
+<p><em>Cursor × Briefcase · Halkin Offices · London 2026</em></p>
+
+</div>
 
 ![Vouch mobile ledger](screenshots/mobile.png)
 ![Vouch desktop dashboard](screenshots/desktop.png)
@@ -238,6 +252,12 @@ vouch/
 ```
 
 For the visual language, see [design.md](./design.md). For the long-form product spec, see [PRD.md](./PRD.md).
+
+---
+
+## License
+
+Vouch is licensed under the [MIT License](./LICENSE).
 
 ---
 
