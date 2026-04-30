@@ -9,9 +9,9 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from .helpers import strtobool
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
-# <root-file>/src/fusecup/
+# <root-file>/src/vouch/
 sys.path.append(os.path.join(PROJECT_DIR, "apps/"))
-# <root-file>/src/fusecup/apps/
+# <root-file>/src/vouch/apps/
 BASE_DIR = os.path.dirname(PROJECT_DIR)
 # <root-file>/src
 
@@ -126,7 +126,7 @@ if DEBUG:
         ]
     )
 
-ROOT_URLCONF = "fusecup.urls"
+ROOT_URLCONF = "vouch.urls"
 
 default_loaders = [
     "django_cotton.cotton_loader.Loader",
@@ -161,7 +161,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "fusecup.wsgi.application"
+WSGI_APPLICATION = "vouch.wsgi.application"
 
 # Django User Model Stuff
 AUTHENTICATION_BACKENDS = (
@@ -415,8 +415,8 @@ AWS_SES_REGION_NAME = os.getenv("AWS_SES_REGION_NAME", "us-east-1")
 AWS_SES_REGION_ENDPOINT = os.getenv("AWS_SES_REGION_ENDPOINT", "email.us-east-1.amazonaws.com")
 
 
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "fusecup<no-reply@mail.fusecup.co>")
-SERVER_EMAIL = os.getenv("SERVER_EMAIL", "fusecup Server<no-reply-server@mail.fusecup.co>")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "vouch<no-reply@mail.vouch.co>")
+SERVER_EMAIL = os.getenv("SERVER_EMAIL", "vouch Server<no-reply-server@mail.vouch.co>")
 
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = "http" if DEBUG else "https"
 

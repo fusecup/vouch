@@ -103,7 +103,7 @@ UIKit components automatically handle:
 
 UIKit components are located in:
 ```
-src/fusecup/templates/cotton/uikit/[component-name]/index.html
+src/vouch/templates/cotton/uikit/[component-name]/index.html
 ```
 
 ## Testing

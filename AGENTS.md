@@ -5,7 +5,7 @@
 **ALL code execution happens inside Docker containers. NEVER assume commands run on the local machine.**
 
 - Always use `docker exec -it <container-name>` or `docker compose run --rm <service>`
-- Default backend container: `fusecup-backend-1`
+- Default backend container: `vouch-backend-1`
 - See [README.md](README.md) for detailed Docker commands
 
 ## Key Technologies
@@ -61,14 +61,14 @@
 
 ```bash
 # All Django commands via Docker
-docker exec -it fusecup-backend-1 python manage.py <command>
+docker exec -it vouch-backend-1 python manage.py <command>
 
 # Access container shell (use ZSH)
-docker exec -it fusecup-backend-1 zsh
+docker exec -it vouch-backend-1 zsh
 
 # Package management (UV only, not pip)
-docker exec -it fusecup-backend-1 uv add <package>
-docker exec -it fusecup-backend-1 uv sync --frozen
+docker exec -it vouch-backend-1 uv add <package>
+docker exec -it vouch-backend-1 uv sync --frozen
 ```
 
 ### Makefile Shortcuts
@@ -84,7 +84,7 @@ make ruff
 
 ### Django Architecture
 
-- Apps location: `src/fusecup/apps/`
+- Apps location: `src/vouch/apps/`
 - Class-based views for complex logic, function-based for simple cases
 - Business logic in models/forms, keep views light
 - Use `select_related`/`prefetch_related` for query optimization

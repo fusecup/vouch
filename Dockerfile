@@ -1,5 +1,5 @@
 FROM python:3.14.4-slim-trixie AS backend
-LABEL maintainer="Girish Koliki <girish@fusecup.co>"
+LABEL maintainer="Girish Koliki <girish@vouch.co>"
 
 # REF: https://github.com/astral-sh/uv/releases
 COPY --from=ghcr.io/astral-sh/uv:0.11.7 /uv /uvx /bin/
@@ -75,8 +75,8 @@ EXPOSE 8000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Option 1: Run the application with gunicorn with uvicorn worker
-CMD ["gunicorn", "-c", "python:fusecup.gunicorn", "fusecup.asgi:application", "-k", "fusecup.uvicorn.DynamicWorker"]
+CMD ["gunicorn", "-c", "python:vouch.gunicorn", "vouch.asgi:application", "-k", "vouch.uvicorn.DynamicWorker"]
 # Option 2: Run the application with uvicorn
-# CMD ["uvicorn", "fusecup.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
+# CMD ["uvicorn", "vouch.asgi:application", "--host", "0.0.0.0", "--port", "8000"]
 # Option 3: Run the application with gunicorn
-# CMD ["gunicorn", "-w", "2", "--threads", "4", "-c", "python:fusecup.gunicorn", "fusecup.wsgi"]
+# CMD ["gunicorn", "-w", "2", "--threads", "4", "-c", "python:vouch.gunicorn", "vouch.wsgi"]

@@ -12,7 +12,7 @@ Templates requiring updates:
 Follow-up TODOs: None
 -->
 
-# FuseCup Constitution
+# vouch Constitution
 
 ## Core Principles
 
@@ -88,7 +88,7 @@ All code changes MUST pass the following gates before merge:
 
 ## Governance
 
-This constitution supersedes all other development practices and guidelines. It represents the foundational principles that govern all technical decisions in the FuseCup project.
+This constitution supersedes all other development practices and guidelines. It represents the foundational principles that govern all technical decisions in the vouch project.
 
 **Amendment Process**:
 

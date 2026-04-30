@@ -165,16 +165,16 @@ jobs:
           echo IS_PROD=true >> .env
           echo TRACK_ANALYTICS=true >> .env
           echo SECRET_KEY=\"${{ secrets.SECRET_KEY }}\" >> .env
-          echo SITE_URL="https://fusecup.co" >> .env
-          echo ALLOWED_HOSTS="fusecup.co" >> .env
+          echo SITE_URL="https://vouch.co" >> .env
+          echo ALLOWED_HOSTS="vouch.co" >> .env
           echo TIME_ZONE="Europe/London" >> .env
           echo POSTGRES_HOST=db >> .env
-          echo POSTGRES_DB=fusecup >> .env
-          echo POSTGRES_USER=fusecup >> .env
+          echo POSTGRES_DB=vouch >> .env
+          echo POSTGRES_USER=vouch >> .env
           echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
           echo EMAIL_BACKEND=django_ses.SESBackend >> .env
-          echo "DEFAULT_FROM_EMAIL=\"fusecup <no-reply@mail.fusecup.co>\"" >> .env
-          echo "SERVER_EMAIL=\"fusecup Server <no-reply-server@mail.fusecup.co>\"" >> .env
+          echo "DEFAULT_FROM_EMAIL=\"vouch <no-reply@mail.vouch.co>\"" >> .env
+          echo "SERVER_EMAIL=\"vouch Server <no-reply-server@mail.vouch.co>\"" >> .env
           echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} >> .env
           echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} >> .env
           echo AWS_SES_REGION_NAME=us-east-1 >> .env
@@ -224,22 +224,22 @@ jobs:
           SERVER_IP: ${{ needs.terraform.outputs.server_ip }}
         run: |
           sudo chmod -R 771 .
-          sudo chmod -R 771 ./ops/prod/nginx/fusecup
-          scp -o StrictHostKeyChecking=no -r ./.env ./docker-compose.yaml root@$SERVER_IP:/home/fusecup
-          scp -o StrictHostKeyChecking=no -r ./ops/prod/nginx/fusecup root@$SERVER_IP:/etc/nginx/sites-available/
+          sudo chmod -R 771 ./ops/prod/nginx/vouch
+          scp -o StrictHostKeyChecking=no -r ./.env ./docker-compose.yaml root@$SERVER_IP:/home/vouch
+          scp -o StrictHostKeyChecking=no -r ./ops/prod/nginx/vouch root@$SERVER_IP:/etc/nginx/sites-available/
           scp -o StrictHostKeyChecking=no -r ./server_certificate.pem ./server_private.key root@$SERVER_IP:/etc/nginx/ssl/
           ssh -o StrictHostKeyChecking=no root@$SERVER_IP << 'ENDSSH'
             rm -rf /etc/nginx/sites-available/default
             rm -rf /etc/nginx/sites-enabled/default
-            ln -s /etc/nginx/sites-available/fusecup /etc/nginx/sites-enabled/fusecup
-            cd /home/fusecup
+            ln -s /etc/nginx/sites-available/vouch /etc/nginx/sites-enabled/vouch
+            cd /home/vouch
             source .env
             echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_ACTOR --password-stdin
             docker pull $DOCKER_FULL_IMAGE_URL
             docker compose up -d
-            docker exec fusecup-backend-1 uv sync --frozen --no-dev
-            docker exec -t fusecup-backend-1 python manage.py collectstatic --noinput
-            docker exec -t fusecup-backend-1 python manage.py migrate
+            docker exec vouch-backend-1 uv sync --frozen --no-dev
+            docker exec -t vouch-backend-1 python manage.py collectstatic --noinput
+            docker exec -t vouch-backend-1 python manage.py migrate
             sudo /etc/init.d/nginx restart
             docker image prune -a --force --filter "until=10h"
           ENDSSH

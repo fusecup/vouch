@@ -31,7 +31,7 @@
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
-Verify compliance with FuseCup Constitution principles (see `.specify/memory/constitution.md`):
+Verify compliance with vouch Constitution principles (see `.specify/memory/constitution.md`):
 
 - **Code Quality**: Does this feature require new dependencies? Are they justified? Will code pass Ruff linting?
 - **Testing Standards**: What test coverage is required? Which test types (unit/integration/e2e) are needed?

@@ -40,8 +40,8 @@ alias compile="python manage.py compilemessages -l en_GB -l de"
 
 alias shell="python manage.py shell_plus --ipython"
 
-alias startapp="f(){ cd fusecup/apps && python ../../manage.py startapp \$@ && cd ../..;  unset -f f; }; f"
+alias startapp="f(){ cd vouch/apps && python ../../manage.py startapp \$@ && cd ../..;  unset -f f; }; f"
 
 alias outdated="uv pip list --outdated"
 
-alias addcomponent="f(){ cd /code/src/fusecup && shadcn_django add \$1 && mv /code/src/fusecup/templates/cotton/\$1 /code/src/fusecup/templates/cotton/uikit/\$1 && cd ..; unset -f f; }; f"
+alias addcomponent="f(){ cd /code/src/vouch && shadcn_django add \$1 && mv /code/src/vouch/templates/cotton/\$1 /code/src/vouch/templates/cotton/uikit/\$1 && cd ..; unset -f f; }; f"

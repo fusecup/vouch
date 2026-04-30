@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@source "../../../fusecup";
+@source "../../../vouch";
 
 @plugin "@tailwindcss/forms";
 @plugin "@tailwindcss/typography";

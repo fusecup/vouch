@@ -11,7 +11,7 @@ provider "digitalocean" {
 # Define Droplet
 resource "digitalocean_droplet" "web" {
   image      = "ubuntu-20-04-x64"
-  name       = "fusecup-web"
+  name       = "vouch-web"
   region     = "nyc1"
   size       = "s-2vcpu-2gb-amd"
   ssh_keys   = [var.g_ssh_key, var.github_ssh_key]
@@ -29,7 +29,7 @@ resource "digitalocean_droplet" "web" {
 
 # Define Firewall
 resource "digitalocean_firewall" "web" {
-  name        = "fusecup-tf-web-firewall"
+  name        = "vouch-tf-web-firewall"
   droplet_ids = [digitalocean_droplet.web.id]
   inbound_rule {
     protocol         = "tcp"
@@ -67,9 +67,9 @@ resource "digitalocean_firewall" "web" {
 }
 
 # Grouping all resources into a project
-resource "digitalocean_project" "fusecup" {
+resource "digitalocean_project" "vouch" {
   name        = "Terraform"
-  description = "All the resources that belong to fusecup project"
+  description = "All the resources that belong to vouch project"
   purpose     = "Web Application"
   environment = "Production"
   resources   = [digitalocean_droplet.web.urn]

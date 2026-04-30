@@ -3,7 +3,7 @@
     "typeCheckingMode": "standard",
     "extraPaths": [
         "src",
-        "src/fusecup/apps"
+        "src/vouch/apps"
     ],
     "exclude": [
         "**/migrations",

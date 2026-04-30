@@ -8,9 +8,9 @@ server {
 }
 
 server {
-    server_name fusecup.co;
+    server_name vouch.co;
 
-    if ( $http_host != "fusecup.co" ){
+    if ( $http_host != "vouch.co" ){
         return 444; #CONNECTION CLOSED WITHOUT RESPONSE
     }
 
@@ -35,21 +35,21 @@ server {
     keepalive_timeout 5;
 
     # Logs
-    access_log /home/fusecup/nginx_logs/access.log;
-    error_log /home/fusecup/nginx_logs/error.log;
+    access_log /home/vouch/nginx_logs/access.log;
+    error_log /home/vouch/nginx_logs/error.log;
 
     location /favicon.ico {
-        alias /home/fusecup/public/static/favicon/favicon.ico;
+        alias /home/vouch/public/static/favicon/favicon.ico;
     }
 
     # Your Django project's media files
     location /media  {
-        alias /home/fusecup/public/media;
+        alias /home/vouch/public/media;
     }
 
     # your Django project's static files
     location /static {
-        alias /home/fusecup/public/static;
+        alias /home/vouch/public/static;
     }
 
     location / {

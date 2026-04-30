@@ -1,32 +1,32 @@
 # django-base [IN PROGRESS]
 
-base project for all fusecup projects [IN PROGRESS]
+base project for all vouch projects [IN PROGRESS]
 
 Please rename all the following files to name of the project
 
 ```bash
-src/fusecup --> src/newname
-ops/prod/nginx/fusecup --> ops/prod/nginx/newname
-ops/stage/nginx/fusecup.conf --> ops/stage/nginx/newname.conf
+src/vouch --> src/newname
+ops/prod/nginx/vouch --> ops/prod/nginx/newname
+ops/stage/nginx/vouch.conf --> ops/stage/nginx/newname.conf
 ```
 
 Please do search all for the following words and its replacements:
 
 ```bash
-fusecup.co --> newname.io (do this first)
-fusecup --> newname
+vouch.co --> newname.io (do this first)
+vouch --> newname
 ```
 
 Custom files changes:
 
 ```bash
-src/fusecup/apps/common/admin.py --> change the Unicode emoji for the project
+src/vouch/apps/common/admin.py --> change the Unicode emoji for the project
 ```
 
 DELETE EVERYTHING TILL HERE
 --------------------------------
 
-# fusecup
+# vouch
 
 ## 🥁 Preparation
 
@@ -73,11 +73,11 @@ $ cd src && uv sync --frozen --dev
 # Second: Open a new tab and Load initial data
 ----------------------------------------------------------
 # for the first time make sure you run the following command to migrate the database
-$ docker exec -it fusecup-backend-1 python manage.py migrate 
+$ docker exec -it vouch-backend-1 python manage.py migrate 
 # (Optional) if there are any fixtures
-$ docker exec -it fusecup-backend-1 python manage.py loaddata fusecup/fixtures/allauth.json
+$ docker exec -it vouch-backend-1 python manage.py loaddata vouch/fixtures/allauth.json
 # Optional: Create super user (use it if needed)
-$ docker exec -it fusecup-backend-1 python manage.py createsuperuser
+$ docker exec -it vouch-backend-1 python manage.py createsuperuser
 
 # Once the servers are up and running you can access the following:
 Server should be running at http://127.0.0.1:8000
@@ -126,11 +126,11 @@ $ docker volume prune                                             # -- Remove al
 $ docker volume inspect                                           # -- Display detailed information on one or more volumes
 
 # Common commands:
-$ docker exec -it fusecup-backend-1 sh                            # -- SSH into the backend container
-$ docker exec -it fusecup-backend-1 zsh                           # -- (fancy) SSH via ZSH into the backend container
-$ docker exec -it fusecup-backend-1 startapp <APP NAME>           # -- Create a new app django app with a name
-$ docker exec -it fusecup-backend-1 shell                         # -- Django shell with iPython function
-$ docker exec -it fusecup-backend-1 uv tree --outdated --depth=1  # -- List outdated pip packages
+$ docker exec -it vouch-backend-1 sh                            # -- SSH into the backend container
+$ docker exec -it vouch-backend-1 zsh                           # -- (fancy) SSH via ZSH into the backend container
+$ docker exec -it vouch-backend-1 startapp <APP NAME>           # -- Create a new app django app with a name
+$ docker exec -it vouch-backend-1 shell                         # -- Django shell with iPython function
+$ docker exec -it vouch-backend-1 uv tree --outdated --depth=1  # -- List outdated pip packages
 
 # Shadcn Django commands
 - <https://shadcn-django.com/accordion/>
@@ -156,8 +156,8 @@ $ pnpm install <package_name>                                     # -- Install a
 $ pnpm remove <package_name>                                      # -- Remove a package
 
 # If you have an error in the docker container and need to install a package:
-$ docker run --name cont3 fusecup-backend uv add <package_name>
-$ docker run --name cont3 fusecup-backend <command>
+$ docker run --name cont3 vouch-backend uv add <package_name>
+$ docker run --name cont3 vouch-backend <command>
 
 # Once you are in docker container:
 $ startapp                                                        # -- Create a new app django app with a name
@@ -174,36 +174,36 @@ $ docker compose build --no-cache backend
 
 PSQL
 ==========
-$ docker exec -it fusecup-db-1 bash                           # -- 1. SSH into docker-postgres image
+$ docker exec -it vouch-db-1 bash                           # -- 1. SSH into docker-postgres image
 $ su - postgres                                               # -- 2. switch user
-$ psql -U fusecup                                             # -- 3. run PSQL
+$ psql -U vouch                                             # -- 3. run PSQL
 $ \c postgres
 
 if you are restoring a DB then you have to first stop the backend server via docker dashboard
 make sure you add dump in the root folder and name it "backup.dump"
 uncomment the volume line at the docker-compose.yml file under db service
-delete the old DB by "DROP DATABASE fusecup;"
-create the same DB by "CREATE DATABASE fusecup;"
+delete the old DB by "DROP DATABASE vouch;"
+create the same DB by "CREATE DATABASE vouch;"
 leave the shell by "\q"
 $ cd /docker-entrypoint-initdb.d/
-$ psql -U fusecup -d fusecup -f backup.dump                   # -- 4. (optional) restore a DB
+$ psql -U vouch -d vouch -f backup.dump                   # -- 4. (optional) restore a DB
 
 Change Passsword for Postgres
 ==========
-$ docker exec -it fusecup-db-1 psql -U fusecup
-$ ALTER USER fusecup WITH PASSWORD 'new_password';
+$ docker exec -it vouch-db-1 psql -U vouch
+$ ALTER USER vouch WITH PASSWORD 'new_password';
 
 Updating Postgres version
 ==========
 # BACKUP while running old version
-$ docker exec -it fusecup-db-1 pg_dumpall -U fusecup > dump.sql
+$ docker exec -it vouch-db-1 pg_dumpall -U vouch > dump.sql
 # Do the update in docker compose
-$ docker stop fusecup-db-1
-$ docker rm fusecup-db-1
-$ docker volume rm fusecup_postgres-data
+$ docker stop vouch-db-1
+$ docker rm vouch-db-1
+$ docker volume rm vouch_postgres-data
 $ docker compose down
 $ docker compose up -d 
-$ docker exec -i fusecup-db-1 psql -U fusecup < dump.sql
+$ docker exec -i vouch-db-1 psql -U vouch < dump.sql
 
 Terraform
 ==========
@@ -220,14 +220,14 @@ $ terraform destroy
 ### ShadCN Commands (Outdated - check with Girish)
 
 ```bash
-# Make sure you are in the /code/src/fusecup directory
-$ cd /code/src/fusecup
+# Make sure you are in the /code/src/vouch directory
+$ cd /code/src/vouch
 # List all the components
 $ shadcn_django list
 # Add a new component
 $ shadcn_django add <component> 
 # Once the component is added, you can run the following command to apply the changes
-$ mv /code/src/fusecup/templates/cotton/<component> /code/src/fusecup/templates/cotton/uikit/<component>
+$ mv /code/src/vouch/templates/cotton/<component> /code/src/vouch/templates/cotton/uikit/<component>
 ```
 
 ### Django UIKit Commands

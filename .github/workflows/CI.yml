@@ -27,7 +27,7 @@ jobs:
           context: .
           target: backend
           push: false
-          tags: fusecup-backend:${{ env.TAG }}
+          tags: vouch-backend:${{ env.TAG }}
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max

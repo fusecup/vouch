@@ -24,14 +24,14 @@ resource "tls_cert_request" "web" {
   private_key_pem = tls_private_key.web.private_key_pem
 
   subject {
-    common_name  = "fusecup.co"
-    organization = "fusecup"
+    common_name  = "vouch.co"
+    organization = "vouch"
   }
 }
 
 resource "cloudflare_origin_ca_certificate" "web" {
   csr                = tls_cert_request.web.cert_request_pem
-  hostnames          = ["fusecup.co"]
+  hostnames          = ["vouch.co"]
   request_type       = "origin-rsa"
   requested_validity = 365
 }

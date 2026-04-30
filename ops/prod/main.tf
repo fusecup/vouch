@@ -1,9 +1,9 @@
 # Terraform Cloud Setup
 terraform {
   cloud {
-    organization = "fusecup"
+    organization = "vouch"
     workspaces {
-      name = "fusecup"
+      name = "vouch"
     }
   }
   required_providers {

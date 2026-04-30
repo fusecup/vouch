@@ -56,7 +56,7 @@
   "emmet.includeLanguages": {
     "django-html": "html"
   },
-  "tailwindCSS.experimental.configFile": "src/fusecup/static/css/custom.css",
+  "tailwindCSS.experimental.configFile": "src/vouch/static/css/custom.css",
   "workbench.colorTheme": "Default Dark+",
   "workbench.iconTheme": "vscode-icons",
   "terminal.integrated.fontFamily": "JetBrains Mono NL",

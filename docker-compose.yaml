@@ -10,7 +10,7 @@ volumes:
 
 # Default app abstraction
 x-app: &default-app
-  image: ${DOCKER_IMAGE_URL:-fusecup-backend}:${DOCKER_IMAGE_TAG:-latest}
+  image: ${DOCKER_IMAGE_URL:-vouch-backend}:${DOCKER_IMAGE_TAG:-latest}
   build:
     context: .
     target: backend
@@ -88,7 +88,7 @@ services:
   celery-worker:
     <<: *default-app
     profiles: [ "celery" ]
-    command: bash -c "celery -A fusecup worker -E -l ${CELERY_LOG_LEVEL:-info}"
+    command: bash -c "celery -A vouch worker -E -l ${CELERY_LOG_LEVEL:-info}"
     deploy:
       resources:
         limits:
@@ -98,7 +98,7 @@ services:
   celery-beat:
     <<: *default-app
     profiles: [ "celery" ]
-    command: bash -c "celery -A fusecup beat -l ${CELERY_LOG_LEVEL:-info}"
+    command: bash -c "celery -A vouch beat -l ${CELERY_LOG_LEVEL:-info}"
     deploy:
       resources:
         limits:
@@ -108,7 +108,7 @@ services:
   celery-flower:
     <<: *default-app
     profiles: [ "flower" ]
-    command: bash -c "celery -A fusecup flower --url_prefix=flower --address=${DOCKER_CELERY_FLOWER_HOST:-127.0.0.1} --port=5555"
+    command: bash -c "celery -A vouch flower --url_prefix=flower --address=${DOCKER_CELERY_FLOWER_HOST:-127.0.0.1} --port=5555"
     ports:
       - 5555:5555
     deploy:

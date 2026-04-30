@@ -46,7 +46,7 @@ jobs:
           echo COMPOSE_PROFILES=postgres,redis,backend,worker,nginx >> .env
           echo DOCKER_RESTART_POLICY=unless-stopped >> .env
           echo DOCKER_WEB_HEALTHCHECK_TEST=/bin/true >> .env
-          echo DOCKER_WEB_VOLUME=/home/gpi2/fusecup/public:/code/src/public >> .env
+          echo DOCKER_WEB_VOLUME=/home/gpi2/vouch/public:/code/src/public >> .env
           echo ENVIRONMENT_NAME=staging >> .env
           echo ENVIRONMENT_COLOR=#FFA500 >> .env
           echo DEBUG=false >> .env
@@ -54,16 +54,16 @@ jobs:
           echo IS_PROD=false >> .env
           echo TRACK_ANALYTICS=false >> .env
           echo SECRET_KEY=\"${{ secrets.SECRET_KEY }}\" >> .env
-          echo SITE_URL="https://fusecup.co" >> .env
-          echo ALLOWED_HOSTS="fusecup.co" >> .env
+          echo SITE_URL="https://vouch.co" >> .env
+          echo ALLOWED_HOSTS="vouch.co" >> .env
           echo TIME_ZONE="Europe/London" >> .env
           echo POSTGRES_HOST=db >> .env
-          echo POSTGRES_DB=fusecup >> .env
-          echo POSTGRES_USER=fusecup >> .env
+          echo POSTGRES_DB=vouch >> .env
+          echo POSTGRES_USER=vouch >> .env
           echo POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} >> .env
           echo EMAIL_BACKEND=django_ses.SESBackend >> .env
-          echo "DEFAULT_FROM_EMAIL=\"fusecup STAGE <no-reply@mail.fusecup.co>\"" >> .env
-          echo "SERVER_EMAIL=\"fusecup Server STAGE <no-reply-server@mail.fusecup.co>\"" >> .env
+          echo "DEFAULT_FROM_EMAIL=\"vouch STAGE <no-reply@mail.vouch.co>\"" >> .env
+          echo "SERVER_EMAIL=\"vouch Server STAGE <no-reply-server@mail.vouch.co>\"" >> .env
           echo AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} >> .env
           echo AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }} >> .env
           echo AWS_SES_REGION_NAME=us-east-1 >> .env
@@ -89,7 +89,7 @@ jobs:
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           ssh-add - <<< "${{ secrets.GPI2_PRIVATE_KEY }}"
           echo "${{ secrets.CF_SSH_PUB }}" >> ~/.ssh/cf_ssh.pub
-          echo "${{ secrets.GPI2_PRIVATE_KEY }}" >> ~/.ssh/id_fusecup
+          echo "${{ secrets.GPI2_PRIVATE_KEY }}" >> ~/.ssh/id_vouch
           echo -e "\nHost *.girishkumar.co\n    ProxyCommand /usr/bin/cloudflared access ssh --hostname %h\n    CertificateFile  ~/.ssh/cf_ssh.pub" >> ~/.ssh/config
 
       - name: Check Server IP
@@ -115,15 +115,15 @@ jobs:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
           SERVER_IP: ${{ secrets.SSH_SERVER_HOST }}
         run: |
-          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_fusecup -r ./.env gpi2@$SERVER_IP:/home/gpi2/fusecup
-          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_fusecup gpi2@$SERVER_IP << 'ENDSSH'
-            cd /home/gpi2/fusecup
+          scp -o StrictHostKeyChecking=no -i ~/.ssh/id_vouch -r ./.env gpi2@$SERVER_IP:/home/gpi2/vouch
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_vouch gpi2@$SERVER_IP << 'ENDSSH'
+            cd /home/gpi2/vouch
             git pull --force
             source .env
             docker compose up -d --no-deps --build backend
             docker compose up -d
             docker exec -t ghostrez-backend-1 uv sync --frozen --no-dev
-            docker exec -t fusecup-backend-1 python manage.py collectstatic --noinput
-            docker exec -t fusecup-backend-1 python manage.py migrate
+            docker exec -t vouch-backend-1 python manage.py collectstatic --noinput
+            docker exec -t vouch-backend-1 python manage.py migrate
             docker image prune -a --force --filter "until=10h"
           ENDSSH

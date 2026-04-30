@@ -1,6 +1,6 @@
 {
     "scripts": {
-        "dev": "pnpx @tailwindcss/cli --input './src/fusecup/static/css/custom.css' --output './src/fusecup/static/css/tw-styles.css' --watch"
+        "dev": "pnpx @tailwindcss/cli --input './src/vouch/static/css/custom.css' --output './src/vouch/static/css/tw-styles.css' --watch"
     },
     "devDependencies": {
         "prettier": "^3.8.3",

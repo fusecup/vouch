@@ -33,7 +33,7 @@ usage:
 	@echo "up..............................Runs docker compose up command"
 	@echo "zsh.............................Enter backend container using zsh"
 
-PROJECT_DIR=fusecup
+PROJECT_DIR=vouch
 
 attach:
 	@docker attach ${PROJECT_DIR}-backend-1

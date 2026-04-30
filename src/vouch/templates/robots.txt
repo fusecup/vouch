@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin/
 Disallow: /cdn-cgi/
 
-Sitemap: https://fusecup.co/sitemap.xml
+Sitemap: https://vouch.co/sitemap.xml

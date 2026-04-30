@@ -986,7 +986,7 @@ wheels = [
 ]
 
 [[package]]
-name = "fusecup"
+name = "vouch"
 version = "0.0.1"
 source = { virtual = "." }
 dependencies = [
