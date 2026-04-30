@@ -36,22 +36,79 @@ export default function VouchScreen() {
   const [approverIndex, setApproverIndex] = useState(1);
   const [biometricError, setBiometricError] = useState<string | null>(null);
   const [biometricMethod, setBiometricMethod] = useState<string | null>(null);
+  const [emotionResult, setEmotionResult] = useState<EmotionResult | null>(null);
+  const [classifierLoading, setClassifierLoading] = useState(false);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const captureRef = useRef<MediaCaptureHandle>(null);
 
   const formatAmount = (amount: number) =>
     `£${amount.toLocaleString('en-GB', { maximumFractionDigits: 0 })}`;
 
   const challengePhrase = `authorize ${amountWords(txn.amount)} to ${txn.counterparty}`;
 
-  const startRecording = () => {
+  // Kick off the in-browser model load as soon as the screen mounts so the
+  // user has it warmed by the time they finish the 8s capture.
+  useEffect(() => {
+    setClassifierLoading(!isClassifierReady());
+    preloadEmotionClassifier()
+      .catch(() => {/* falls back to heuristic */})
+      .finally(() => setClassifierLoading(false));
+  }, []);
+
+  const finishRecording = async () => {
+    if (tickRef.current) {
+      clearInterval(tickRef.current);
+      tickRef.current = null;
+    }
+    setStage('classifying');
+    let audioBlob: Blob = new Blob();
+    try {
+      const stopped = await captureRef.current?.stop();
+      if (stopped) audioBlob = stopped.audioBlob;
+    } catch {
+      /* ignore — fall through to classification */
+    }
+    try {
+      if (audioBlob.size > 0) {
+        const result = await classifyAudio(audioBlob);
+        setEmotionResult(result);
+      } else {
+        setEmotionResult({ label: 'no audio', score: 0, family: 'unknown' });
+      }
+    } catch (e) {
+      setEmotionResult({
+        label: 'classifier error',
+        score: 0,
+        family: 'unknown',
+      });
+    }
+    setStage('result');
+  };
+
+  const startRecording = async () => {
     setStage('recording');
     setRecordingMs(0);
+    setEmotionResult(null);
+
+    try {
+      await captureRef.current?.start();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'capture failed';
+      setBiometricError(`capture: ${msg}`);
+      setStage('expanded');
+      return;
+    }
+
     tickRef.current = setInterval(() => {
       setRecordingMs((ms) => {
         const next = ms + 100;
         if (next >= RECORDING_TOTAL_MS) {
           if (tickRef.current) clearInterval(tickRef.current);
-          setStage('result');
+          tickRef.current = null;
+          // queue the async finishRecording outside the setter
+          setTimeout(() => {
+            finishRecording();
+          }, 0);
           return RECORDING_TOTAL_MS;
         }
         return next;
@@ -65,7 +122,7 @@ export default function VouchScreen() {
     const result = await promptBiometric();
     if (result.ok) {
       setBiometricMethod(result.method);
-      startRecording();
+      await startRecording();
     } else {
       const labels: Record<string, string> = {
         cancelled: 'cancelled by user',
@@ -81,13 +138,23 @@ export default function VouchScreen() {
   useEffect(() => {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
+      captureRef.current?.cancel();
     };
   }, []);
 
   const reset = () => {
+    if (tickRef.current) {
+      clearInterval(tickRef.current);
+      tickRef.current = null;
+    }
+    captureRef.current?.cancel();
     setStage('expanded');
     setRecordingMs(0);
+    setEmotionResult(null);
   };
+
+  const isCoerced =
+    duress || (emotionResult?.family === 'coerced');
 
   const islandState: IslandState =
     stage === 'expanded' || stage === 'faceid'
@@ -107,9 +174,23 @@ export default function VouchScreen() {
             totalMs: RECORDING_TOTAL_MS,
             phrase: challengePhrase,
           }
-        : duress
-          ? { kind: 'coerced', reason: 'rushed cadence' }
-          : { kind: 'vouched', emotion: 'neutral', cadence: 'ok' };
+        : stage === 'classifying'
+          ? {
+              kind: 'recording',
+              elapsedMs: RECORDING_TOTAL_MS,
+              totalMs: RECORDING_TOTAL_MS,
+              phrase: 'analysing emotion…',
+            }
+          : isCoerced
+            ? {
+                kind: 'coerced',
+                reason: duress ? 'rushed cadence' : (emotionResult?.label ?? 'coerced'),
+              }
+            : {
+                kind: 'vouched',
+                emotion: emotionResult?.label ?? 'neutral',
+                cadence: 'ok',
+              };
 
   return (
     <BloomGradient>
@@ -126,13 +207,22 @@ export default function VouchScreen() {
       </View>
 
       <View style={styles.body}>
-        {stage === 'expanded' && <ExpandedHint error={biometricError} />}
+        {stage === 'expanded' && (
+          <ExpandedHint error={biometricError} classifierLoading={classifierLoading} />
+        )}
         {stage === 'faceid' && <FaceIdGate />}
-        {stage === 'recording' && <RecordingFrame phrase={challengePhrase} />}
+        {(stage === 'recording' || stage === 'classifying') && (
+          <RecordingFrame
+            phrase={challengePhrase}
+            captureRef={captureRef}
+            classifying={stage === 'classifying'}
+          />
+        )}
         {stage === 'result' && (
           <ResultFrame
             duress={duress}
             biometricMethod={biometricMethod}
+            emotionResult={emotionResult}
             approverIndex={approverIndex}
             approverTotal={txn.approversRequired ?? 3}
             onAdvanceApprover={() => {
@@ -165,7 +255,13 @@ export default function VouchScreen() {
   );
 }
 
-function ExpandedHint({ error }: { error: string | null }) {
+function ExpandedHint({
+  error,
+  classifierLoading,
+}: {
+  error: string | null;
+  classifierLoading: boolean;
+}) {
   return (
     <View style={styles.hintBlock}>
       <Text style={styles.hintTitle}>VOUCH FROM THE ISLAND</Text>
@@ -173,6 +269,9 @@ function ExpandedHint({ error }: { error: string | null }) {
         Tap <Text style={styles.hintEmph}>Face ID</Text> in the Dynamic Island above to begin the
         challenge-phrase capture.
       </Text>
+      {classifierLoading && (
+        <Text style={styles.classifierLine}>warming voice classifier…</Text>
+      )}
       {error && <Text style={styles.errorLine}>{error}</Text>}
     </View>
   );
@@ -190,13 +289,23 @@ function FaceIdGate() {
   );
 }
 
-function RecordingFrame({ phrase }: { phrase: string }) {
+function RecordingFrame({
+  phrase,
+  captureRef,
+  classifying,
+}: {
+  phrase: string;
+  captureRef: React.RefObject<MediaCaptureHandle | null>;
+  classifying: boolean;
+}) {
   return (
     <View style={styles.recordingFrame}>
       <View style={styles.cameraStub}>
-        <Text style={styles.cameraStubLabel}>[ camera feed ]</Text>
+        <MediaCapture ref={captureRef as React.Ref<MediaCaptureHandle>} />
       </View>
-      <Text style={styles.teleprompter}>&ldquo;{phrase}&rdquo;</Text>
+      <Text style={styles.teleprompter}>
+        {classifying ? 'analysing voice…' : `“${phrase}”`}
+      </Text>
     </View>
   );
 }
@@ -204,12 +313,14 @@ function RecordingFrame({ phrase }: { phrase: string }) {
 function ResultFrame({
   duress,
   biometricMethod,
+  emotionResult,
   approverIndex,
   approverTotal,
   onAdvanceApprover,
 }: {
   duress: boolean;
   biometricMethod: string | null;
+  emotionResult: EmotionResult | null;
   approverIndex: number;
   approverTotal: number;
   onAdvanceApprover: () => void;
@@ -222,15 +333,30 @@ function ResultFrame({
         : biometricMethod === 'webauthn'
           ? 'Platform authenticator'
           : 'biometric';
-  if (duress) {
+
+  const coerced = duress || emotionResult?.family === 'coerced';
+  const reason =
+    duress
+      ? 'rushed cadence (duress override)'
+      : emotionResult
+        ? `${emotionResult.label} · score ${(emotionResult.score * 100).toFixed(0)}%`
+        : 'unknown';
+  const features = emotionResult?.features;
+
+  if (coerced) {
     return (
       <View style={[styles.resultFrame, { borderColor: colors.pulseRed, backgroundColor: '#1A0000' }]}>
         <Text style={[styles.resultGlyph, { color: colors.pulseRed }]}>●</Text>
         <Text style={[styles.resultTitle, { color: colors.pulseRed }]}>COERCED · BLOCKED</Text>
         <Text style={styles.resultBody}>
-          rushed cadence detected · facial mismatch ▲{'\n'}
+          {reason} ▲{'\n'}
           this attestation cannot be overridden
         </Text>
+        {features && (
+          <Text style={styles.featureLine}>
+            {features.durationSec.toFixed(1)}s · rms σ²={features.rmsVariance.toFixed(4)} · syl/s={features.syllableRate.toFixed(1)}
+          </Text>
+        )}
       </View>
     );
   }
@@ -240,9 +366,14 @@ function ResultFrame({
       <Text style={[styles.resultGlyph, { color: '#3FE07D' }]}>✓</Text>
       <Text style={styles.resultTitle}>VOUCHED</Text>
       <Text style={styles.resultBody}>
-        {methodLabel} verified · neutral · cadence ok{'\n'}
+        {methodLabel} verified · {reason}{'\n'}
         approver {approverIndex} of {approverTotal} complete
       </Text>
+      {features && (
+        <Text style={styles.featureLine}>
+          {features.durationSec.toFixed(1)}s · centroid {features.spectralCentroid.toFixed(0)} Hz · syl/s {features.syllableRate.toFixed(1)}
+        </Text>
+      )}
       <Pressable style={styles.advanceButton} onPress={onAdvanceApprover}>
         <Text style={styles.advanceText}>{last ? 'EXECUTE PAYMENT' : 'NEXT APPROVER →'}</Text>
       </Pressable>
@@ -308,6 +439,19 @@ const styles = StyleSheet.create({
     color: colors.pulseRed,
     marginTop: 8,
   },
+  classifierLine: {
+    ...type.caption,
+    color: colors.accentAmber,
+    marginTop: 8,
+    fontSize: 10,
+  },
+  featureLine: {
+    ...type.caption,
+    color: colors.inkMuted,
+    fontSize: 9,
+    marginTop: 8,
+    textAlign: 'center',
+  },
   faceIdFrame: {
     alignItems: 'center',
     gap: 14,
@@ -341,11 +485,6 @@ const styles = StyleSheet.create({
   },
   cameraStub: {
     width: '78%',
-    aspectRatio: 0.72,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.cardStroke,
-    backgroundColor: '#0A0604',
     alignItems: 'center',
     justifyContent: 'center',
   },
