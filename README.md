@@ -1,31 +1,3 @@
-# django-base [IN PROGRESS]
-
-base project for all vouch projects [IN PROGRESS]
-
-Please rename all the following files to name of the project
-
-```bash
-src/vouch --> src/newname
-ops/prod/nginx/vouch --> ops/prod/nginx/newname
-ops/stage/nginx/vouch.conf --> ops/stage/nginx/newname.conf
-```
-
-Please do search all for the following words and its replacements:
-
-```bash
-vouch.co --> newname.io (do this first)
-vouch --> newname
-```
-
-Custom files changes:
-
-```bash
-src/vouch/apps/common/admin.py --> change the Unicode emoji for the project
-```
-
-DELETE EVERYTHING TILL HERE
---------------------------------
-
 # vouch
 
 ## 🥁 Preparation
