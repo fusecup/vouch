@@ -187,6 +187,41 @@ GOOGLE_OAUTH_CLIENT_SECRET=...
 
 ---
 
+## Web preview
+
+The mobile app is also a web app. `react-native-web` and `.web.tsx` shims are wired in for the native modules — `expo-local-authentication` falls through to WebAuthn (Touch ID on macOS, Windows Hello, Face ID in iOS Safari), `react-native-vision-camera` falls through to `getUserMedia`.
+
+### Build
+
+```bash
+cd mobile
+pnpm install
+pnpm exec expo export --platform web
+# → dist/ (static SPA, ready to host)
+```
+
+Test the build locally:
+
+```bash
+pnpm exec serve dist            # or any static file server
+```
+
+### Deploy to Vercel
+
+`mobile/vercel.json` is committed with the right build command, output directory, and SPA rewrites. One-time setup:
+
+```bash
+cd mobile
+pnpm dlx vercel login
+pnpm dlx vercel --prod
+```
+
+Or connect the repo in the Vercel dashboard with **Root Directory** set to `mobile`. Every push to `main` redeploys automatically.
+
+The same `dist/` works on Netlify, Cloudflare Pages, or any static host. Just publish from `mobile/dist` and add an SPA fallback to `index.html`.
+
+---
+
 ## Repo
 
 ```
