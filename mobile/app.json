@@ -9,7 +9,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "co.vouch.app"
+      "bundleIdentifier": "co.vouch.app",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Vouch uses Face ID to authorize high-value transactions and confirm you are present for the attestation."
+      }
     },
     "android": {
       "package": "co.vouch.app",
@@ -27,6 +30,12 @@
         "expo-system-ui",
         {
           "userInterfaceStyle": "dark"
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Vouch uses Face ID to authorize high-value transactions and confirm you are present for the attestation."
         }
       ]
     ],

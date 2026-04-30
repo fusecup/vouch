@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BloomGradient } from '@/components/BloomGradient';
 import { DynamicIslandBanner, IslandState } from '@/components/DynamicIslandBanner';
 import { pendingTransactions } from '@/data/mockTransactions';
+import { promptBiometric } from '@/services/biometric';
 import { colors } from '@/tokens/colors';
 import { type } from '@/tokens/typography';
 
@@ -26,6 +27,8 @@ export default function VouchScreen() {
   const [recordingMs, setRecordingMs] = useState(0);
   const [duress, setDuress] = useState(false);
   const [approverIndex, setApproverIndex] = useState(1);
+  const [biometricError, setBiometricError] = useState<string | null>(null);
+  const [biometricMethod, setBiometricMethod] = useState<string | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const formatAmount = (amount: number) =>
@@ -33,23 +36,39 @@ export default function VouchScreen() {
 
   const challengePhrase = `authorize ${amountWords(txn.amount)} to ${txn.counterparty}`;
 
-  const beginFaceId = () => {
+  const startRecording = () => {
+    setStage('recording');
+    setRecordingMs(0);
+    tickRef.current = setInterval(() => {
+      setRecordingMs((ms) => {
+        const next = ms + 100;
+        if (next >= RECORDING_TOTAL_MS) {
+          if (tickRef.current) clearInterval(tickRef.current);
+          setStage('result');
+          return RECORDING_TOTAL_MS;
+        }
+        return next;
+      });
+    }, 100);
+  };
+
+  const beginFaceId = async () => {
     setStage('faceid');
-    setTimeout(() => {
-      setStage('recording');
-      setRecordingMs(0);
-      tickRef.current = setInterval(() => {
-        setRecordingMs((ms) => {
-          const next = ms + 100;
-          if (next >= RECORDING_TOTAL_MS) {
-            if (tickRef.current) clearInterval(tickRef.current);
-            setStage('result');
-            return RECORDING_TOTAL_MS;
-          }
-          return next;
-        });
-      }, 100);
-    }, 900);
+    setBiometricError(null);
+    const result = await promptBiometric();
+    if (result.ok) {
+      setBiometricMethod(result.method);
+      startRecording();
+    } else {
+      const labels: Record<string, string> = {
+        cancelled: 'cancelled by user',
+        unavailable: 'biometric unavailable on this device',
+        no_hardware: 'no biometric hardware',
+        failed: 'authentication failed',
+      };
+      setBiometricError(labels[result.reason] ?? result.reason);
+      setStage('expanded');
+    }
   };
 
   useEffect(() => {
@@ -100,12 +119,13 @@ export default function VouchScreen() {
       </View>
 
       <View style={styles.body}>
-        {stage === 'expanded' && <ExpandedHint />}
+        {stage === 'expanded' && <ExpandedHint error={biometricError} />}
         {stage === 'faceid' && <FaceIdGate />}
         {stage === 'recording' && <RecordingFrame phrase={challengePhrase} />}
         {stage === 'result' && (
           <ResultFrame
             duress={duress}
+            biometricMethod={biometricMethod}
             approverIndex={approverIndex}
             approverTotal={txn.approversRequired ?? 3}
             onAdvanceApprover={() => {
@@ -138,7 +158,7 @@ export default function VouchScreen() {
   );
 }
 
-function ExpandedHint() {
+function ExpandedHint({ error }: { error: string | null }) {
   return (
     <View style={styles.hintBlock}>
       <Text style={styles.hintTitle}>VOUCH FROM THE ISLAND</Text>
@@ -146,6 +166,7 @@ function ExpandedHint() {
         Tap <Text style={styles.hintEmph}>Face ID</Text> in the Dynamic Island above to begin the
         challenge-phrase capture.
       </Text>
+      {error && <Text style={styles.errorLine}>{error}</Text>}
     </View>
   );
 }
@@ -156,8 +177,8 @@ function FaceIdGate() {
       <View style={styles.faceIdRing}>
         <Text style={styles.faceIdGlyph}>◉</Text>
       </View>
-      <Text style={styles.faceIdLabel}>FACE ID</Text>
-      <Text style={styles.faceIdHint}>secure enclave · on-device</Text>
+      <Text style={styles.faceIdLabel}>WAITING FOR BIOMETRIC</Text>
+      <Text style={styles.faceIdHint}>complete the prompt on your device</Text>
     </View>
   );
 }
@@ -175,15 +196,25 @@ function RecordingFrame({ phrase }: { phrase: string }) {
 
 function ResultFrame({
   duress,
+  biometricMethod,
   approverIndex,
   approverTotal,
   onAdvanceApprover,
 }: {
   duress: boolean;
+  biometricMethod: string | null;
   approverIndex: number;
   approverTotal: number;
   onAdvanceApprover: () => void;
 }) {
+  const methodLabel =
+    biometricMethod === 'face'
+      ? 'Face ID'
+      : biometricMethod === 'fingerprint'
+        ? 'Touch ID'
+        : biometricMethod === 'webauthn'
+          ? 'Platform authenticator'
+          : 'biometric';
   if (duress) {
     return (
       <View style={[styles.resultFrame, { borderColor: colors.pulseRed, backgroundColor: '#1A0000' }]}>
@@ -202,7 +233,7 @@ function ResultFrame({
       <Text style={[styles.resultGlyph, { color: '#3FE07D' }]}>✓</Text>
       <Text style={styles.resultTitle}>VOUCHED</Text>
       <Text style={styles.resultBody}>
-        emotion: neutral · cadence: ok{'\n'}
+        {methodLabel} verified · neutral · cadence ok{'\n'}
         approver {approverIndex} of {approverTotal} complete
       </Text>
       <Pressable style={styles.advanceButton} onPress={onAdvanceApprover}>
@@ -264,6 +295,11 @@ const styles = StyleSheet.create({
   },
   hintEmph: {
     color: colors.accentAmber,
+  },
+  errorLine: {
+    ...type.caption,
+    color: colors.pulseRed,
+    marginTop: 8,
   },
   faceIdFrame: {
     alignItems: 'center',
