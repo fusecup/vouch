@@ -18,12 +18,12 @@ export default function ApproveScreen() {
   const [decisions, setDecisions] = useState<Record<string, 'approved' | 'rejected' | 'escalated'>>({});
 
   const queue = useMemo(() => {
-    const tier1 = pendingTransactions.filter((t) => t.tier === 1);
+    const tier2 = pendingTransactions.filter((t) => t.tier === 2);
     if (params.id) {
-      const head = pendingTransactions.find((t) => t.id === params.id && t.tier === 1);
-      if (head) return [head, ...tier1.filter((t) => t.id !== head.id)];
+      const head = pendingTransactions.find((t) => t.id === params.id && t.tier === 2);
+      if (head) return [head, ...tier2.filter((t) => t.id !== head.id)];
     }
-    return tier1;
+    return tier2;
   }, [params.id]);
 
   const remaining = queue.filter((t) => !decisions[t.id]);
@@ -71,22 +71,51 @@ export default function ApproveScreen() {
       </View>
 
       <View style={[styles.actionsRow, { paddingBottom: insets.bottom + 36 }]}>
-        <ActionGlyph label="reject" glyph="✕" color={colors.pulseRed} />
-        <ActionGlyph label="more" glyph="↑" color={colors.accentAmber} />
-        <ActionGlyph label="approve" glyph="✓" color="#3FE07D" />
+        <ActionGlyph
+          label="reject"
+          glyph="✕"
+          color={colors.pulseRed}
+          onPress={current ? () => handleReject(current) : undefined}
+        />
+        <ActionGlyph
+          label="escalate"
+          glyph="↑"
+          color={colors.accentAmber}
+          onPress={current ? () => handleEscalate(current) : undefined}
+        />
+        <ActionGlyph
+          label="approve"
+          glyph="✓"
+          color="#3FE07D"
+          onPress={current ? () => handleApprove(current) : undefined}
+        />
       </View>
     </BloomGradient>
   );
 }
 
-function ActionGlyph({ label, glyph, color }: { label: string; glyph: string; color: string }) {
+function ActionGlyph({
+  label,
+  glyph,
+  color,
+  onPress,
+}: {
+  label: string;
+  glyph: string;
+  color: string;
+  onPress?: () => void;
+}) {
   return (
-    <View style={styles.actionItem}>
+    <Pressable
+      style={({ pressed }) => [styles.actionItem, pressed && { opacity: 0.6 }]}
+      onPress={onPress}
+      disabled={!onPress}
+    >
       <View style={[styles.glyphCircle, { borderColor: color }]}>
         <Text style={[styles.glyphText, { color }]}>{glyph}</Text>
       </View>
       <Text style={styles.actionLabel}>{label}</Text>
-    </View>
+    </Pressable>
   );
 }
 

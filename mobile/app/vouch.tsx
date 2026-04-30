@@ -18,7 +18,7 @@ export default function VouchScreen() {
   const params = useLocalSearchParams<{ id?: string; mode?: string }>();
 
   const txn = useMemo(
-    () => pendingTransactions.find((t) => t.id === params.id) ?? pendingTransactions.find((t) => t.tier === 2)!,
+    () => pendingTransactions.find((t) => t.id === params.id) ?? pendingTransactions.find((t) => t.tier === 3)!,
     [params.id],
   );
 

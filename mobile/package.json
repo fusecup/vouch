@@ -9,6 +9,8 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@babel/runtime": "^7.29.2",
+    "@expo/metro-runtime": "^4.0.1",
     "expo": "~52.0.0",
     "expo-constants": "~17.0.3",
     "expo-linear-gradient": "~14.0.1",
@@ -17,15 +19,18 @@
     "expo-system-ui": "~4.0.4",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "react-native": "0.76.3",
+    "react-native": "0.76.9",
     "react-native-gesture-handler": "~2.20.2",
     "react-native-reanimated": "~3.16.1",
     "react-native-safe-area-context": "4.12.0",
-    "react-native-screens": "~4.1.0"
+    "react-native-screens": "~4.4.0",
+    "react-native-web": "^0.19.13"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/react": "~18.3.12",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
     "typescript": "~5.3.3"
   },
   "private": true

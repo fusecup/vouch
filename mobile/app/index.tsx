@@ -15,9 +15,9 @@ export default function TransactionList() {
 
   const handleTxnPress = (txn: Transaction) => {
     if (txn.status === 'auto_paid') return;
-    if (txn.tier === 2) {
+    if (txn.tier === 3) {
       router.push({ pathname: '/vouch', params: { id: txn.id } });
-    } else {
+    } else if (txn.tier === 2) {
       router.push({ pathname: '/approve', params: { id: txn.id } });
     }
   };
@@ -36,24 +36,33 @@ export default function TransactionList() {
           <Text style={styles.gear}>⚙</Text>
         </View>
 
-        <Text style={styles.sectionLabel}>TODAY · {pendingTransactions.filter(t => t.status === 'pending').length} PENDING</Text>
-
-        <View style={styles.divider} />
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionLabel}>
+            TODAY · {pendingTransactions.filter(t => t.status === 'pending').length} PENDING
+          </Text>
+          <Text style={styles.sectionTotal}>
+            £{pendingTransactions.reduce((s, t) => s + t.amount, 0).toLocaleString('en-GB')}
+          </Text>
+        </View>
 
         {pendingTransactions.map((txn) => (
           <TxnRow key={txn.id} txn={txn} onPress={handleTxnPress} />
         ))}
 
-        <View style={{ height: 40 }} />
+        <View style={{ height: 28 }} />
 
-        <Text style={styles.sectionLabel}>YESTERDAY · 47 SETTLED</Text>
-        <View style={styles.divider} />
+        <View style={styles.sectionHead}>
+          <Text style={styles.sectionLabel}>YESTERDAY · {settledTransactions.length} SETTLED</Text>
+          <Text style={styles.sectionTotal}>
+            £{settledTransactions.reduce((s, t) => s + t.amount, 0).toLocaleString('en-GB')}
+          </Text>
+        </View>
 
         {settledTransactions.map((txn) => (
           <TxnRow key={txn.id} txn={txn} onPress={handleTxnPress} />
         ))}
 
-        <View style={{ height: 80 }} />
+        <View style={{ height: 60 }} />
         <Text style={styles.footerNote}>Vouch · Plaid sandbox · Specter live</Text>
       </ScrollView>
     </BloomGradient>
@@ -83,17 +92,21 @@ const styles = StyleSheet.create({
     color: colors.inkMono,
     fontSize: 18,
   },
+  sectionHead: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
+    paddingHorizontal: 22,
+    marginBottom: 14,
+  },
   sectionLabel: {
     ...type.caption,
     color: colors.inkMono,
-    paddingHorizontal: 20,
-    marginBottom: 8,
   },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: '#1A1208',
-    marginHorizontal: 20,
-    marginBottom: 4,
+  sectionTotal: {
+    ...type.caption,
+    color: colors.inkMuted,
+    fontSize: 10,
   },
   footerNote: {
     ...type.caption,

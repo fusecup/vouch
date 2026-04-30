@@ -1,350 +1,300 @@
-# vouch
+# Vouch
 
-## 🥁 Preparation
+> *A tiered guardrail layer for an agent that moves money — auto-approving the boring, swiping the borderline, and biometrically vouching for the dangerous.*
 
-1. Install Docker Desktop - <https://www.docker.com/products/docker-desktop>
+**Cursor × Briefcase · Halkin Offices · London 2026**
+**Tracks:** Hybrid — primary **Track 01 (Money Movement)**, with **Track 02 (Financial Intelligence)** as the gating mechanism.
 
-2. clone this repo & cd into the root of the repo where you can see docker-compose.yml
+---
 
-3. looking at the `.env.example` create a `.env` file in the repo.
+## Why this exists
 
-4. setup git config just for this repo <https://support.atlassian.com/bitbucket-cloud/docs/configure-your-dvcs-username-for-commits/>
+Finance agents that move money are now technically capable of running payroll, paying invoices, and sweeping cash. The blocker is no longer capability — it is **trust calibration**. Today's options are binary: either the agent has authority and one fraud incident bankrupts you, or every transaction needs a human and the agent is theatre.
 
-5. Install GPG Keychain and setup passwords - <https://gpgtools.org>
+Vouch makes the trust gradient explicit. The agent acts alone where it should, asks lightly where it should ask lightly, and demands a wall of human attestation where the money is large enough to matter.
 
-6. Make sure the commits are signed - <https://dev.to/devmount/signed-git-commits-in-vs-code-36do>
+The intelligence (categorisation, fraud signal, counterparty quality) is not a side feature — it is the **gate** that decides which tier any given transaction enters.
 
-7. Make sure you edit the .git/config file with the following settings
+---
 
-```yaml
+## The three-tier guardrail
+
+| Tier | Trigger | UI | Latency | Failure mode |
+|---|---|---|---|---|
+| **0 — Silent auto-approve** | Known counterparty, in-band amount, healthy Specter score, no anomaly | None — receipt drops in dashboard + Slack with reverse-link | < 2s | Reversible-by-default for 60 min |
+| **1 — Tinder swipe** | Mid-band amount, mild anomaly, first-time vendor with acceptable Specter | Mobile card stack with vendor logo, amount, 1-line LLM "why", Specter mini-card | < 5s of approver attention | Approval fatigue → cap 20/day, auto-escalate |
+| **2 — Biometric vouch** | High-band, strong anomaly, poor Specter, or unknown recipient over £25k | iOS Dynamic Island Live Activity → Face ID → 5–8s video selfie reading randomized challenge phrase → multi-party (2–4 approvers within 30 min) | < 90s per approver | Coercion classifier blocks duress approvals |
+
+**Tier 2 in detail.** Face ID via `react-native-biometrics` (template stays in Apple's Secure Enclave — never leaves device). Video recorded with `react-native-vision-camera`. The clip goes to a Django Celery task running:
+
+- `opencv/facial_expression_recognition` — 7-class facial emotion at 4 fps
+- `FunAudioLLM/SenseVoiceSmall` — single forward pass returns transcript + voice emotion + acoustic event tags
+- Distress fusion: face emotion + voice emotion + cadence + transcript-match against the challenge phrase. Any single high-confidence coerced signal blocks the txn — even if Face ID passed and other approvers cleared.
+
+---
+
+## Architecture
+
+```
+                    ┌─────────────────────────┐
+   Txn intent ─────▶│  Risk scorer (Haiku 4.5  │
+   (Plaid webhook)  │  + Specter + history)   │
+                    └────────────┬────────────┘
+                                 │ score + reasons
+                    ┌────────────▼────────────┐
+                    │   Tier router            │
+                    │   (deterministic rules   │
+                    │    + LLM tie-breaker)    │
+                    └─┬──────────┬───────────┬─┘
+                      │          │           │
+                  Tier 0      Tier 1      Tier 2
+                  execute     swipe       biometric vouch
+                      │          │           │
+                      └──────────┴───────────┘
+                                 │
+                          Rails executor ──▶ ledger + receipt
+```
+
+| Layer | Stack |
+|---|---|
+| Money rails | Plaid sandbox (transactions + auth) |
+| Agent + risk scoring | Django + Celery, Anthropic SDK (Haiku 4.5 scorer / Opus 4.7 explainer), Specter API |
+| Coercion classifier | Python (`transformers` + `torch`), exposed as a Celery task |
+| Mobile (Tier 1 + Tier 2 + Dynamic Island) | React Native via Expo Router + dev client; Expo Notifications + SMS fallback |
+| Dashboard / activity log | Django + HTMX with SSE for live txn stream |
+
+**Two LLM roles, deliberately split.** Haiku 4.5 is the cheap, fast scorer that runs on every txn. Opus 4.7 is only called on Tier 1+ for the human-facing explanation and post-hoc audit narrative.
+
+---
+
+## Quick start
+
+You need Docker Desktop, Node.js with pnpm, and (for the mobile side) an iPhone with Expo Go or Xcode for the simulator.
+
+### 1. Backend (Django + Postgres + Redis + Celery)
+
+```bash
+# from repo root
+cp .env.example .env
+
+# build & boot the full stack (db, redis, backend, celery, flower, kanchi, mail, tailwind)
+docker compose build backend
+docker compose up -d
+
+# migrate & seed
+docker exec -it vouch-backend-1 python manage.py migrate
+docker exec -it vouch-backend-1 python manage.py loaddata vouch/fixtures/allauth.json
+docker exec -it vouch-backend-1 python manage.py createsuperuser
+```
+
+Once up:
+
+| Service | URL |
+|---|---|
+| Dashboard | http://127.0.0.1:8000 |
+| Admin | http://127.0.0.1:8000/admin/ |
+| Auth (login/signup) | http://127.0.0.1:8000/a/login/ |
+| Celery Flower | http://127.0.0.1:8765 |
+| Kanchi (Celery UI) | http://127.0.0.1:3000 |
+| MailCatcher | http://127.0.0.1:1080 |
+
+Authentication is `django-allauth` with a Google social provider already wired (`/a/`). To enable Google sign-in, add a `SocialApp` row in the admin under *Social Accounts → Social applications* with your Google OAuth client ID/secret. Email + password works out of the box.
+
+### 2. Mobile app (Expo / React Native)
+
+```bash
+cd mobile
+pnpm install
+pnpm start          # Metro bundler — scan QR with Expo Go on iPhone
+pnpm ios            # or boot the iOS simulator directly
+```
+
+The app currently runs as a JS-only Expo Go project against mock data in `src/data/mockTransactions.ts`. Native modules (`react-native-biometrics`, `react-native-vision-camera`, ActivityKit Live Activity) are wired in at prebuild time once the demo path is signed off — judges will see the fully-prebuilt binary on the demo phones.
+
+**Routes:**
+- `/` — transaction ledger (list)
+- `/approve?id=…` — Tier 1 Tinder swipe (right = approve, left = reject, up = escalate)
+- `/vouch?id=…` — Tier 2 biometric vouch with Dynamic Island banner
+
+**Demo killer.** On `/vouch`, toggle the `duress` switch at the bottom before reaching the result stage. Same Face ID pass, same recording — the coercion classifier flags the cadence and blocks the txn. That is the 90-second pitch.
+
+### 3. Required secrets in `.env`
+
+The `.env.example` covers infra. For the demo path, also set:
+
+```bash
+ANTHROPIC_API_KEY=...    # Haiku 4.5 scorer + Opus 4.7 explainer
+SPECTER_API_KEY=...      # counterparty quality oracle
+PLAID_CLIENT_ID=...      # sandbox is fine
+PLAID_SECRET=...
+GOOGLE_OAUTH_CLIENT_ID=...     # optional, for /a/ Google sign-in
+GOOGLE_OAUTH_CLIENT_SECRET=...
+```
+
+---
+
+## The 90-second demo
+
+| t | What the judge sees |
+|---|---|
+| 0–10s | Dashboard live: 12 invoices arrived in the last hour. 9 already auto-paid (Tier 0). Receipts streaming. |
+| 10–25s | A £4,200 invoice to a new vendor pops on the presenter's phone as a Tinder card. Specter mini-card shows the vendor is a real seed-stage co. Swipe right. Paid. |
+| 25–45s | A £62,000 transfer triggers. Tier 2 escalation fires to **the actual judges' phones** (pre-enrolled). Face ID prompt → randomized challenge phrase ("authorize sixty-two thousand to Acme on April thirty"). Voice + face captured. |
+| 45–70s | On-device emotion panel renders live: neutral / confident. Three approvers complete. Money moves. |
+| 70–90s | Re-run the same £62k txn, but this time the presenter reads the phrase under fake duress (rushed cadence). Coerced flag fires red, txn blocks. *That* is the moment. |
+
+---
+
+## How this maps to the rubric
+
+| Criterion | Pts | How Vouch lands it |
+|---|---|---|
+| Concrete workflow value | 2 | Replaces the "everyone CC'd on every payment approval" Slack chaos with calibrated automation. The Tier 0 stat is live on stage. |
+| Track fit (hybrid) | 2 | Tier 0/2 = money movement; Tier 0→1→2 routing = financial intelligence. Intelligence isn't a side feature — it is the gate. |
+| Human-in-the-loop | 1 | Three tiers with explicit thresholds, confidence gates (Specter + LLM score), multi-party Tier 2, coercion as a *third* axis beyond authentication. |
+| Technical execution | 1 | Real rails (Plaid), edge biometric capture (RN), Django agent with Specter + dual-model LLM. Three integrations that all work in the demo. |
+| Demo clarity | 1 | The duress-replay moment in the last 20s is the entire pitch in one beat. |
+| **Best use of Cursor** | +1 | Built end-to-end in Cursor IDE with Specter MCP wired in for live company-data exploration; Cursor agent runs the eval suite that calibrates risk thresholds against historical txns. |
+| **Best use of Specter** | +1 | Counterparty quality score *changes the tier threshold* — Specter is load-bearing, not decorative. |
+| **Best use of LLM models** | +1 | Two-model split: Haiku for per-txn scoring (cost), Opus for the human-facing explanation (quality). Coercion classifier is a separate small model. |
+
+---
+
+## What Vouch will not do (the guardrail on the guardrail)
+
+- Will not move money without rails approval — Tier 2 multi-party block is hard, not advisory.
+- Will not store the Face ID template off-device — it stays in the Secure Enclave. Challenge-phrase video/audio is sent to the server for emotion analysis with a hard 24h retention TTL.
+- Will not auto-pay an unknown counterparty over £5k regardless of risk score.
+- Will not adapt thresholds without an audit trail — every threshold change is a signed config event.
+- Will not silently override a coerced flag — a coerced attestation always blocks, even with sufficient other approvals.
+
+---
+
+## Repo layout
+
+```
+vouch/
+├── PRD.md                      # The product spec — read this for the long form
+├── docker-compose.yaml         # Multi-service stack (Postgres, Redis, Django, Celery, Flower, Kanchi, MailCatcher, Tailwind)
+├── Makefile                    # make up / make migrate / make shell / make zsh
+├── src/
+│   ├── manage.py
+│   └── vouch/
+│       ├── settings.py
+│       ├── urls.py             # /a/ allauth, /admin/, /d/ dashboard
+│       ├── celery.py
+│       └── apps/
+│           ├── accounts/       # custom User, allauth adapter
+│           ├── common/         # admin_site
+│           └── fc_uikit/       # design system + welcome view
+└── mobile/                     # Expo Router RN app — Tier 1 swipe + Tier 2 vouch
+    ├── app/
+    │   ├── index.tsx           # ledger
+    │   ├── approve.tsx         # Tier 1 swipe
+    │   └── vouch.tsx           # Tier 2 biometric (with duress toggle)
+    └── src/
+        ├── components/
+        ├── data/mockTransactions.ts
+        └── tokens/             # design tokens (single source of truth)
+```
+
+---
+
+## Operational reference
+
+<details>
+<summary><b>Docker cheatsheet</b></summary>
+
+```bash
+docker compose up                           # boot with logs
+docker compose up -d                        # boot detached
+docker compose down                         # stop
+docker exec -it vouch-backend-1 zsh         # shell into backend
+docker exec -it vouch-backend-1 shell       # Django shell_plus
+docker exec -it vouch-db-1 psql -U vouch    # postgres shell
+docker compose build --no-cache backend     # rebuild backend image
+docker compose up -d --no-deps --build celery-flower celery-beat celery-worker backend
+```
+
+Compose profiles in `.env` (`COMPOSE_PROFILES`) control which services boot. Default boots everything: `postgres,redis,backend,celery,flower,kanchi,mail,tailwind,jupyter`. Drop profiles you do not need to save resources.
+
+</details>
+
+<details>
+<summary><b>Make targets</b></summary>
+
+```bash
+make up                  # docker compose up
+make migrate             # python manage.py migrate
+make migrations          # python manage.py makemigrations
+make shell               # Django shell_plus
+make zsh                 # zsh into backend container
+make ruff                # lint + format Python
+make attach              # attach to backend container (for ipdb)
+```
+
+</details>
+
+<details>
+<summary><b>UV (Python deps) inside the backend container</b></summary>
+
+```bash
+uv sync                          # sync deps, update lock
+uv sync --frozen                 # sync without touching lock
+uv add -U <package>              # add a package
+uv tree --outdated --depth=1     # list outdated
+```
+
+For IDE imports, you can also `cd src && uv sync --frozen --dev` on the host.
+
+</details>
+
+<details>
+<summary><b>Tests</b></summary>
+
+```bash
+docker exec -it vouch-backend-1 ruff check
+docker exec -it vouch-backend-1 basedpyright
+docker exec -it vouch-backend-1 coverage run manage.py test
+docker exec -it vouch-backend-1 coverage report --skip-covered --show-missing --omit="*/venv/*"
+```
+
+</details>
+
+<details>
+<summary><b>Spec-driven development (Spec-Kit)</b></summary>
+
+This project uses [Spec-Kit](https://github.com/github/spec-kit). All commands available in Cursor via `/speckit.*`:
+
+```bash
+/speckit.specify <feature>    # create spec.md
+/speckit.plan                 # generate plan.md, research.md, data-model.md, contracts/
+/speckit.tasks                # break plan into ordered tasks.md
+/speckit.analyze              # cross-artifact consistency check
+/speckit.implement            # execute tasks.md in dependency order
+/speckit.checklist            # quality checklists (UX, security, testing)
+/speckit.constitution         # view/update project constitution
+```
+
+Spec artifacts live in `.specify/specs/<number>-<feature>/`. The constitution at `.specify/memory/constitution.md` is the source of truth all specs must align with.
+
+</details>
+
+<details>
+<summary><b>Optional: GPG-signed commits</b></summary>
+
+This repo expects signed commits in production. For hackathon work this is optional — see [GPG Tools](https://gpgtools.org/) and configure per-repo:
+
+```ini
+# .git/config
 [user]
     name = <FULL NAME>
     email = <EMAIL>
-    signingkey = <GPG KEY - LAST 16 DIGITS>
+    signingkey = <GPG KEY — last 16 digits>
 ```
 
-## 🪚 Setup
+</details>
 
-```bash
-# First: To build and run the project
-----------------------------------------------------------
-# Make sure you are in the root of the repo where you can see docker-compose.yml
-# Make sure you have created a .env file in the root of the repo
-$ cp .env.example .env
-# Build the project
-$ docker compose build --no-cache backend
-# Setup UV dependencies
-$ docker compose up backend
-# once the server is up and running (you can see the logs in the terminal), then kill it via keyboard shortcut
-$ [CTRL + C]
-# Run the following command to fully build and run the project
-$ docker compose up
-# (Optional IDE support) If you want imports to run correctly in your IDE, you can run the following command
-$ cd src && uv sync --frozen --dev
+---
 
-# Second: Open a new tab and Load initial data
-----------------------------------------------------------
-# for the first time make sure you run the following command to migrate the database
-$ docker exec -it vouch-backend-1 python manage.py migrate 
-# (Optional) if there are any fixtures
-$ docker exec -it vouch-backend-1 python manage.py loaddata vouch/fixtures/allauth.json
-# Optional: Create super user (use it if needed)
-$ docker exec -it vouch-backend-1 python manage.py createsuperuser
-
-# Once the servers are up and running you can access the following:
-Server should be running at http://127.0.0.1:8000
-Celery Monitoring at http://127.0.0.1:8765
-Kanchi - Celery Monitoring UI at http://127.0.0.1:3000
-MailCatcher to catch local emails at http://127.0.0.1:1080
-Ngrok Webhook at http://127.0.0.1:4040 - if this is required for this project
-```
-
-### 🐳 Makefile
-
-```bash
-# This project contains a Makefile featuring shortcuts to common commands run inside docker containers.
-==========
-$ make                                                        # -- Lists make commands
-```
-
-## 🐳 Docker Ops Cheatsheet
-
-```bash
-Docker
-==========
-$ docker compose up                                               # -- Compose the docker with logs
-$ docker compose up -d                                            # -- Compose the docker without logs
-$ docker compose logs                                             # -- Show logs from docker compose
-$ docker compose down                                             # -- Stop all containers started via docker compose
-$ docker container ls                                             # -- Show only list of running containers
-$ docker ps                                                       # -- Show only list of running containers
-$ docker ps -a                                                    # -- List of running containers in your system
-$ docker ps -a -q                                                 # -- Show only list of running containers just their IDs
-$ docker stop <CONTAINER ID>                                      # -- Stop containers (can pass mutiple IDs with space)
-$ docker stop $(docker ps -a -q)                                  # -- Stop all containers
-$ docker rm <CONTAINER ID>                                        # -- Remove containers with IDs
-$ docker rm $(docker ps -a -q)                                    # -- Remove all containers
-$ docker rm $(docker ps -aq)                                      # -- Remove all containers
-$ docker exec -it <CONTAINER ID/NAME> sh                          # -- SSH into the docker container
-$ docker image ls                                                 # -- List of docker images in your system
-$ docker image ls -q                                              # -- List of docker images in your system just their IDs
-$ docker image rm -f <IMAGE ID/NAME>                              # -- Remove image by force
-$ docker rmi $(docker images -q)                                  # -- Remove all images
-$ docker rmi $(docker images -q --filter "dangling=true")         # -- Remove all untagged images
-$ docker volume ls                                                # -- List volumes
-$ docker volume rm <VOLUME NAME>                                  # -- Remove one or more volumes
-$ docker volume rm -f <VOLUME NAME>                               # -- Force remove one or more volumes
-$ docker volume prune                                             # -- Remove all unused local volumes
-$ docker volume inspect                                           # -- Display detailed information on one or more volumes
-
-# Common commands:
-$ docker exec -it vouch-backend-1 sh                            # -- SSH into the backend container
-$ docker exec -it vouch-backend-1 zsh                           # -- (fancy) SSH via ZSH into the backend container
-$ docker exec -it vouch-backend-1 startapp <APP NAME>           # -- Create a new app django app with a name
-$ docker exec -it vouch-backend-1 shell                         # -- Django shell with iPython function
-$ docker exec -it vouch-backend-1 uv tree --outdated --depth=1  # -- List outdated pip packages
-
-# Shadcn Django commands
-- <https://shadcn-django.com/accordion/>
-$ shadcn_django list                                              # -- List all the components
-$ addcomponent <component>                                        # -- Add a new component
-
-# UV commands
-$ uv sync                                                         # -- Sync with updating the uv.lock file
-$ uv sync --locked                                                # -- (Dev only) Assert that the uv.lock will remain unchanged. 
-$ uv sync --frozen                                                # -- Sync without updating the uv.lock file
-$ uv tree                                                         # -- List installed pip packages
-$ uv tree --group dev --outdated --depth=1                        # -- List outdated pip packages
-$ uv add -U <package_name>                                        # -- Add a package
-$ uv lock --upgrade                                               # -- Upgrade the uv.lock version of packages
-
-# UV upgrade (Library upgrades -- tool I am still trying out)  https://github.com/Alirex/uv_upgrade
-$ uv-upgrade --version                                            # -- Check the version of uv-upgrade
-$ uv-upgrade                                                      # -- Show help for uv-upgrade
-
-# pnpm commands
-$ pnpm update                                                     # -- Update all packages
-$ pnpm install <package_name>                                     # -- Install a package
-$ pnpm remove <package_name>                                      # -- Remove a package
-
-# If you have an error in the docker container and need to install a package:
-$ docker run --name cont3 vouch-backend uv add <package_name>
-$ docker run --name cont3 vouch-backend <command>
-
-# Once you are in docker container:
-$ startapp                                                        # -- Create a new app django app with a name
-$ rmpyc                                                           # -- Clear all temporary python files
-$ trans                                                           # -- Make messages for en_GB & de
-$ compile                                                         # -- Compile messages for en_GB & de
-$ shell                                                           # -- Django shell with iPython function
-
-# If we need to rebuild just celery
-$ docker compose up -d --no-deps --build celery-flower celery-beat celery-worker backend
-
-# If we need to rebuild just backend
-$ docker compose build --no-cache backend
-
-PSQL
-==========
-$ docker exec -it vouch-db-1 bash                           # -- 1. SSH into docker-postgres image
-$ su - postgres                                               # -- 2. switch user
-$ psql -U vouch                                             # -- 3. run PSQL
-$ \c postgres
-
-if you are restoring a DB then you have to first stop the backend server via docker dashboard
-make sure you add dump in the root folder and name it "backup.dump"
-uncomment the volume line at the docker-compose.yml file under db service
-delete the old DB by "DROP DATABASE vouch;"
-create the same DB by "CREATE DATABASE vouch;"
-leave the shell by "\q"
-$ cd /docker-entrypoint-initdb.d/
-$ psql -U vouch -d vouch -f backup.dump                   # -- 4. (optional) restore a DB
-
-Change Passsword for Postgres
-==========
-$ docker exec -it vouch-db-1 psql -U vouch
-$ ALTER USER vouch WITH PASSWORD 'new_password';
-
-Updating Postgres version
-==========
-# BACKUP while running old version
-$ docker exec -it vouch-db-1 pg_dumpall -U vouch > dump.sql
-# Do the update in docker compose
-$ docker stop vouch-db-1
-$ docker rm vouch-db-1
-$ docker volume rm vouch_postgres-data
-$ docker compose down
-$ docker compose up -d 
-$ docker exec -i vouch-db-1 psql -U vouch < dump.sql
-
-Terraform
-==========
-$ terraform init
-$ terraform validate
-$ terraform fmt
-$ terraform fmt -check
-$ terraform plan
-$ terraform apply
-$ terraform output -raw token_value
-$ terraform destroy 
-```
-
-### ShadCN Commands (Outdated - check with Girish)
-
-```bash
-# Make sure you are in the /code/src/vouch directory
-$ cd /code/src/vouch
-# List all the components
-$ shadcn_django list
-# Add a new component
-$ shadcn_django add <component> 
-# Once the component is added, you can run the following command to apply the changes
-$ mv /code/src/vouch/templates/cotton/<component> /code/src/vouch/templates/cotton/uikit/<component>
-```
-
-### Django UIKit Commands
-
-**Important**: After moving components to the `uikit` folder, use them in templates with the `c-uikit.` prefix:
-
-```django
-
-<!-- ✅ Correct: Use c-uikit.component-name -->
-<c-uikit.button variant="outline">Click Me</c-uikit.button>
-<c-uikit.badge variant="secondary">Badge</c-uikit.badge>
-
-<!-- ❌ Incorrect: Don't use c-component-name -->
-<c-button variant="outline">Click Me</c-button>
-```
-
-### Tests
-
-The tests are done automatically via github actions under this link - . However if you like to run tests manually follow the comands below
-
-```bash
-ssh into docker 
-$ ruff check
-$ basedpyright
-$ coverage run manage.py test
-$ coverage report --skip-covered --show-missing --omit="*/venv/*"
-```
-
-## 💫 Spec-Driven Development
-
-This project uses [Spec-Kit](https://github.com/github/spec-kit) for spec-driven development, a methodology that emphasizes creating detailed specifications and implementation plans before writing code. This ensures better planning, consistency, and quality throughout the development process.
-
-### Overview
-
-Spec-Driven Development follows a structured workflow:
-
-1. **Specify** - Create detailed feature specifications
-2. **Plan** - Generate implementation plans with technical context
-3. **Tasks** - Break down plans into actionable, dependency-ordered tasks
-4. **Analyze** - Validate consistency across artifacts
-5. **Implement** - Execute the implementation plan systematically
-
-#### Spec-Kit Commands
-
-All commands are available in Cursor via the `/speckit.*` prefix. Here's a quick reference:
-
-```bash
-# Step 1: Create Feature Specification
-/speckit.specify <feature description>
-# Example: /speckit.specify Add user authentication with OAuth2 support
-# Creates: specs/<number>-<feature-name>/spec.md
-# - Generates a feature specification from natural language
-# - Creates a new git branch for the feature
-# - Sets up the feature directory structure
-
-# Step 2: Generate Implementation Plan
-/speckit.plan
-# Creates: specs/<feature-name>/plan.md, research.md, data-model.md, contracts/
-# - Generates technical implementation plan
-# - Resolves technical unknowns through research
-# - Creates data models and API contracts
-# - Validates against project constitution
-
-# Step 3: Generate Task Breakdown
-/speckit.tasks
-# Creates: specs/<feature-name>/tasks.md
-# - Breaks down plan into actionable tasks
-# - Orders tasks by dependencies
-# - Marks parallel execution opportunities
-# - Organizes by user story priorities
-
-# Step 4: Analyze Consistency (Optional)
-/speckit.analyze
-# - Performs cross-artifact consistency analysis
-# - Identifies duplications and ambiguities
-# - Validates against constitution
-# - Provides remediation suggestions
-
-# Step 5: Implement
-/speckit.implement
-# - Executes tasks from tasks.md in correct order
-# - Validates checklists before implementation
-# - Follows TDD approach when specified
-# - Provides progress updates
-
-# Additional Commands
-/speckit.checklist                    # Create quality checklists (UX, security, testing, etc.)
-/speckit.clarify                      # Clarify ambiguous requirements in spec
-/speckit.constitution                 # View or update project constitution
-```
-
-#### Typical Workflow
-
-```bash
-# 1. Start with a feature idea
-/speckit.specify Create a task management system with drag-and-drop boards
-
-# 2. Generate the implementation plan (after reviewing spec.md)
-/speckit.plan
-
-# 3. Review the plan and research documents, then generate tasks
-/speckit.tasks
-
-# 4. (Optional) Analyze for consistency before implementation
-/speckit.analyze
-
-# 5. Implement the feature
-/speckit.implement
-```
-
-#### Project Structure
-
-Spec-driven artifacts are stored in `.specify/`:
-
-```text
-.specify/
-├── memory/
-│   └── constitution.md          # Project constitution (core principles)
-├── templates/                   # Spec-kit templates
-├── scripts/                     # Helper scripts
-└── specs/                       # Feature specifications
-    └── <number>-<feature-name>/
-        ├── spec.md              # Feature specification
-        ├── plan.md              # Implementation plan
-        ├── tasks.md             # Task breakdown
-        ├── research.md          # Technical research findings
-        ├── data-model.md        # Data model design
-        ├── contracts/           # API contracts
-        └── checklists/          # Quality checklists
-```
-
-#### Key Principles
-
-- **Constitution-First**: All specifications must align with `.specify/memory/constitution.md`
-- **Test-Driven**: Tests are written before implementation for complex logic
-- **Incremental Delivery**: Features are broken into independently testable user stories
-- **Quality Gates**: All code must pass linting, tests, and coverage thresholds
-
-#### Resources
-
-- [Spec-Kit GitHub Repository](https://github.com/github/spec-kit) - Official documentation and examples
-- `.specify/memory/constitution.md` - Project-specific development principles
-- `.cursor/commands/speckit.*.md` - Detailed command documentation
-
-### Ref
-
-- <https://1password.community/discussion/133105/error-connecting-to-agent-permission-denied-when-forwarding-1password-ssh-agent-to-docker>
-- <https://github.com/nickjj/docker-django-example>
+*Built in Cursor. Moves money on Plaid. Reads Specter. Asks for a vouch.*

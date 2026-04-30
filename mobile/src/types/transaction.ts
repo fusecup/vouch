@@ -1,4 +1,4 @@
-export type Tier = 0 | 1 | 2;
+export type Tier = 1 | 2 | 3;
 
 export type TxnStatus = 'pending' | 'auto_paid' | 'approved' | 'rejected' | 'blocked';
 
@@ -20,6 +20,15 @@ export interface Transaction {
   explainer?: string;
   approversRequired?: number;
   approversCompleted?: number;
+  domain?: string;
+  logoUrl?: string;
+  reference?: string;
+  account?: string;
+  method?: string;
+  dateLabel?: string;
+  brandColor?: string;
+  recurring?: boolean;
+  timeToClear?: string;
 }
 
 export interface BiometricResult {

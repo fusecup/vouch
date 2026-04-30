@@ -16,7 +16,7 @@ import { motion } from '@/tokens/motion';
 import { type } from '@/tokens/typography';
 
 export type IslandState =
-  | { kind: 'compact'; amount: string; tier: 0 | 1 | 2 }
+  | { kind: 'compact'; amount: string; tier: 1 | 2 | 3 }
   | { kind: 'expanded'; amount: string; counterparty: string; specterGrade: string; approverIndex: number; approverTotal: number; onFaceId: () => void }
   | { kind: 'recording'; elapsedMs: number; totalMs: number; phrase: string }
   | { kind: 'vouched'; emotion: string; cadence: string }

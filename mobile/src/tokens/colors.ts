@@ -5,8 +5,13 @@ export const colors = {
   bloomBlack: '#050505',
   bloomEdge: '#000000',
 
-  cardFill: '#000000',
-  cardStroke: '#2A1A0A',
+  cardFill: '#FFFDF8',
+  cardStroke: '#E8E2D6',
+  cardInkPrimary: '#0A0A0A',
+  cardInkSecondary: '#6B5C45',
+  cardInkMuted: '#9A8E78',
+  cardSubFill: '#F5F1E8',
+  cardSpecterInset: '#0A0A0A',
 
   inkPrimary: '#FFFFFF',
   inkMono: '#C9B89A',
